@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "dmalmq.omabar",
+  "name": "Omabar",
+  "version": "0.1.0",
+  "author": "Daniel Malmqvist",
+  "license": "MIT",
+  "description": "Omarchy bar with a same-bar overflow drawer for plugins and tray apps",
+  "kinds": ["bar"],
+  "entryPoints": {
+    "bar": "Bar.qml"
+  }
+}
