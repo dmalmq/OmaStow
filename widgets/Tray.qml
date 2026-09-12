@@ -24,6 +24,8 @@ BarWidget {
   readonly property var drawerItems: bucket("drawer")
   readonly property var allItems: bucket("all")
   readonly property int drawerCount: drawerItems.length
+  readonly property bool hostOwnsDrawer: !!bar && bar.hostOwnsOverflowDrawer === true
+  readonly property bool localDrawer: allItems.length > 0 && !hostOwnsDrawer
   readonly property int trayItemExtent: Style.bar.iconSlot
   readonly property int trayItemGap: 0
   readonly property int trayJoinGap: 0
@@ -210,6 +212,14 @@ BarWidget {
     persistTrayState(p, h)
   }
 
+  function syncOverflowHost() {
+    if (bar && bar.hostOwnsOverflowDrawer === true) bar.trayHostItem = root
+  }
+
+  onBarChanged: syncOverflowHost()
+  Component.onCompleted: syncOverflowHost()
+  Component.onDestruction: if (bar && bar.trayHostItem === root) bar.trayHostItem = null
+
   visible: pinnedItems.length > 0 || drawerCount > 0
   clip: false
   implicitWidth: root.vertical ? root.barSize : trayContent.implicitWidth
@@ -232,7 +242,7 @@ BarWidget {
       id: horizontalTrayRoot
 
       readonly property int pinnedWidth: pinnedRow.implicitWidth
-      readonly property int drawerBlockWidth: root.allItems.length > 0 ? expandIcon.implicitWidth + root.drawerExtent : 0
+      readonly property int drawerBlockWidth: root.localDrawer ? expandIcon.implicitWidth + root.drawerExtent : 0
 
       implicitWidth: pinnedWidth + drawerBlockWidth
       implicitHeight: root.barSize
@@ -257,7 +267,7 @@ BarWidget {
         x: 0
         width: horizontalTrayRoot.drawerBlockWidth
         height: root.barSize
-        visible: root.allItems.length > 0
+        visible: root.localDrawer
 
         HoverHandler {
           onHoveredChanged: root.expanded = hovered
@@ -319,7 +329,7 @@ BarWidget {
       id: verticalTrayRoot
 
       readonly property int pinnedHeight: pinnedCol.implicitHeight
-      readonly property int drawerBlockHeight: root.allItems.length > 0 ? expandIcon.implicitHeight + root.drawerExtent : 0
+      readonly property int drawerBlockHeight: root.localDrawer ? expandIcon.implicitHeight + root.drawerExtent : 0
 
       implicitWidth: root.barSize
       implicitHeight: pinnedHeight + drawerBlockHeight
@@ -339,7 +349,7 @@ BarWidget {
         y: 0
         width: root.barSize
         height: verticalTrayRoot.drawerBlockHeight
-        visible: root.allItems.length > 0
+        visible: root.localDrawer
 
         HoverHandler {
           onHoveredChanged: root.expanded = hovered

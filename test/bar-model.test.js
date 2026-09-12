@@ -1,6 +1,6 @@
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
-const { partitionSection, inlineSettingsDelta, entrySettings } = require("../BarModel.js")
+const { partitionSection, inlineSettingsDelta, entrySettings, overflowEntries } = require("../BarModel.js")
 
 describe("partitionSection", () => {
   it("puts entries without overflow on main and keeps order", () => {
@@ -86,5 +86,38 @@ describe("entrySettings", () => {
       entrySettings({ id: "omarchy.clock", overflow: true, format: "HH:mm" }),
       { format: "HH:mm" }
     )
+  })
+})
+
+describe("overflowEntries", () => {
+  it("walks left, then center, then right and keeps section order", () => {
+    const leftClock = { id: "omarchy.clock", overflow: true }
+    const centerMedia = { id: "omarchy.media", overflow: true }
+    const centerAudio = { id: "omarchy.audio" }
+    const rightPower = { id: "omarchy.power", overflow: true }
+    const rightTray = { id: "omarchy.tray" }
+    assert.deepEqual(
+      overflowEntries({
+        left: [leftClock],
+        center: [centerMedia, centerAudio],
+        right: [rightPower, rightTray]
+      }),
+      [
+        { kind: "plugin", region: "left", entry: leftClock },
+        { kind: "plugin", region: "center", entry: centerMedia },
+        { kind: "plugin", region: "right", entry: rightPower }
+      ]
+    )
+  })
+
+  it("returns an empty list when nothing is overflowed", () => {
+    assert.deepEqual(
+      overflowEntries({ left: [{ id: "omarchy.menu" }], center: [], right: [{ id: "omarchy.tray" }] }),
+      []
+    )
+  })
+
+  it("returns an empty list for a non-object layout", () => {
+    assert.deepEqual(overflowEntries(undefined), [])
   })
 })

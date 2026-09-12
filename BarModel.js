@@ -56,6 +56,18 @@ function partitionSection(entries) {
   return { main: main, overflow: overflow }
 }
 
+function overflowEntries(layout) {
+  var result = []
+  if (!isPlainObject(layout)) return result
+  var regions = ["left", "center", "right"]
+  for (var r = 0; r < regions.length; r++) {
+    var overflow = partitionSection(layout[regions[r]]).overflow
+    for (var i = 0; i < overflow.length; i++)
+      result.push({ kind: "plugin", region: regions[r], entry: overflow[i] })
+  }
+  return result
+}
+
 function moduleString(entry, key, fallback) {
   var settings = entrySettings(entry)
   var value = settings[key]
@@ -235,6 +247,7 @@ if (typeof module !== "undefined") {
     entryId: entryId,
     pinTrayToInner: pinTrayToInner,
     partitionSection: partitionSection,
+    overflowEntries: overflowEntries,
     moduleString: moduleString,
     entryIndex: entryIndex,
     entriesBefore: entriesBefore,

@@ -3,10 +3,12 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
 import "BarModel.js" as BarModel
+import "widgets" as LocalWidgets
 
 Item {
   id: root
@@ -49,6 +51,9 @@ Item {
     layout: { left: [], center: [], right: [] }
   })
   property var layoutConfig: fallbackBarConfig.layout
+  property bool hostOwnsOverflowDrawer: true
+  property bool overflowExpanded: false
+  property var trayHostItem: null
   property string centerAnchor: ""
   property bool requestedTransparent: false
   property bool useTransparentForeground: false
@@ -325,6 +330,7 @@ Item {
         pluginBarApis[id].destroy()
     }
     pluginBarApis = ({})
+    trayHostItem = null
   }
 
   function registerClickTarget(target) {
@@ -620,6 +626,20 @@ Item {
     var entries = layoutConfig ? layoutConfig[region] : null
     return Array.isArray(entries) ? entries : []
   }
+
+  function mainEntries(region) {
+    return BarModel.partitionSection(layoutEntries(region)).main
+  }
+
+  function overflowEntries() {
+    var serial = barConfigSerial
+    return BarModel.overflowEntries(layoutConfig)
+  }
+
+  // The drawer reveals inward, so it docks on the inner side of whichever
+  // section holds the tray chevron it replaces. No tray means the right side.
+  readonly property string overflowDrawerSection:
+    entryIndex(layoutEntries("left"), "omarchy.tray") !== -1 ? "left" : "right"
 
   // Tab order for the panels in one bar region. Scoped to a single bar surface
   // so tabbing walks the bar the open panel belongs to instead of hopping the
@@ -1356,15 +1376,23 @@ Item {
         CenterModules { anchors.fill: parent }
 
         LeftModules {
+          id: leftModules
           anchors.left: parent.left
           anchors.leftMargin: Style.space(8)
           anchors.verticalCenter: parent.verticalCenter
         }
 
         RightModules {
+          id: rightModules
           anchors.right: parent.right
           anchors.rightMargin: Style.space(8)
           anchors.verticalCenter: parent.verticalCenter
+        }
+
+        OverflowDrawer {
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.left: root.overflowDrawerSection === "left" ? leftModules.right : undefined
+          anchors.right: root.overflowDrawerSection === "right" ? rightModules.left : undefined
         }
       }
     }
@@ -1378,21 +1406,37 @@ Item {
         CenterModules { anchors.fill: parent }
 
         LeftModules {
+          id: leftModules
           anchors.top: parent.top
           anchors.topMargin: Style.space(8)
           anchors.horizontalCenter: parent.horizontalCenter
         }
 
         RightModules {
+          id: rightModules
           anchors.bottom: parent.bottom
           anchors.bottomMargin: Style.space(8)
           anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        OverflowDrawer {
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.top: root.overflowDrawerSection === "left" ? leftModules.bottom : undefined
+          anchors.bottom: root.overflowDrawerSection === "right" ? rightModules.top : undefined
         }
       }
     }
   }
 
   Component { id: emptyModuleComponent; Item { implicitWidth: 0; implicitHeight: 0; visible: false } }
+  Component { id: localTrayComponent; LocalWidgets.Tray {} }
+
+  // A third-party kind:"bar" is handed a snapshot of the host widget
+  // registry, so this plugin's widgets/*.qml never load through that map.
+  function overlayWidgetComponent(id) {
+    if (String(id) === "omarchy.tray") return localTrayComponent
+    return null
+  }
 
   component DragGhostPanel: PanelWindow {
     id: ghostWindow
@@ -1516,25 +1560,25 @@ Item {
   }
 
   function findCenterAnchorEntry() {
-    var entries = root.layoutEntries("center")
+    var entries = root.mainEntries("center")
     var idx = root.entryIndex(entries, root.centerAnchor)
     return idx === -1 ? null : entries[idx]
   }
 
   component LeftModules: ModuleList {
-    entries: root.layoutEntries("left")
+    entries: root.mainEntries("left")
     region: "left"
   }
 
   component RightModules: ModuleList {
-    entries: root.layoutEntries("right")
+    entries: root.mainEntries("right")
     region: "right"
   }
 
   component CenterModules: Item {
     id: centerRoot
 
-    property var entries: root.layoutEntries("center")
+    property var entries: root.mainEntries("center")
     readonly property bool hasAnchor: root.entryIndex(entries, root.centerAnchor) !== -1
     readonly property var anchorEntry: root.findCenterAnchorEntry()
 
@@ -1716,6 +1760,249 @@ Item {
     }
   }
 
+  // One drawer for overflowed plugins and unpinned tray apps, clipped and
+  // slid out the way Tray.qml's own drawer is. The block keeps its full
+  // extent while collapsed, so opening slides the chevron inward instead of
+  // pushing the neighbouring section along the bar.
+  component OverflowDrawer: Item {
+    id: drawerRoot
+
+    readonly property var pluginEntries: root.overflowEntries()
+    readonly property var trayItems: root.trayHostItem ? root.trayHostItem.drawerItems : []
+    readonly property int animationDuration: 600
+    property real revealProgress: root.overflowExpanded ? 1 : 0
+    readonly property real drawerExtent: drawerContent.item ? drawerContent.item.drawerExtent : 0
+    readonly property real revealExtent: drawerExtent * revealProgress
+    readonly property color openFill: Style.selectedFillFor(root.barForeground, Color.accent, root.urgent)
+
+    visible: pluginEntries.length > 0 || trayItems.length > 0
+    implicitWidth: drawerContent.item ? drawerContent.item.implicitWidth : 0
+    implicitHeight: drawerContent.item ? drawerContent.item.implicitHeight : 0
+    width: implicitWidth
+    height: implicitHeight
+
+    Behavior on revealProgress {
+      NumberAnimation { duration: drawerRoot.animationDuration; easing.type: Easing.OutCubic }
+    }
+
+    function chevronPressed(button) {
+      if (button === Qt.RightButton && root.trayHostItem)
+        root.trayHostItem.managePopupOpen = !root.trayHostItem.managePopupOpen
+    }
+
+    Loader {
+      id: drawerContent
+      active: drawerRoot.visible
+      sourceComponent: root.vertical ? verticalDrawer : horizontalDrawer
+    }
+
+    Component {
+      id: horizontalDrawer
+
+      Item {
+        id: horizontalDrawerRoot
+        readonly property real drawerExtent: drawerRow.implicitWidth
+
+        implicitWidth: expandIcon.implicitWidth + drawerExtent
+        implicitHeight: root.barSize
+
+        containmentMask: QtObject {
+          function contains(point: point): bool {
+            if (point.y < 0 || point.y > horizontalDrawerRoot.height) return false
+            var chevronX = drawerRoot.drawerExtent - drawerRoot.revealExtent
+            return point.x >= chevronX && point.x <= horizontalDrawerRoot.implicitWidth
+          }
+        }
+
+        Rectangle {
+          anchors.fill: expandIcon
+          visible: root.overflowExpanded
+          color: drawerRoot.openFill
+          radius: Style.cornerRadius
+        }
+
+        BarIconButton {
+          id: expandIcon
+          bar: root
+          width: implicitWidth
+          height: implicitHeight
+          x: drawerRoot.drawerExtent - drawerRoot.revealExtent
+          text: "\uf053"
+          onPressed: function(button) { drawerRoot.chevronPressed(button) }
+        }
+
+        Item {
+          x: expandIcon.width
+          anchors.verticalCenter: parent.verticalCenter
+          width: drawerRoot.drawerExtent
+          height: root.barSize
+          clip: true
+
+          Row {
+            id: drawerRow
+            x: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 0
+            layer.enabled: true
+
+            Repeater {
+              model: drawerRoot.pluginEntries
+
+              ModuleSlot {
+                required property var modelData
+                entry: modelData.entry
+                region: modelData.region
+              }
+            }
+
+            Repeater {
+              model: drawerRoot.trayItems
+              OverflowTrayItem {}
+            }
+          }
+        }
+      }
+    }
+
+    Component {
+      id: verticalDrawer
+
+      Item {
+        id: verticalDrawerRoot
+        readonly property real drawerExtent: drawerColumn.implicitHeight
+
+        implicitWidth: root.barSize
+        implicitHeight: expandIcon.implicitHeight + drawerExtent
+
+        containmentMask: QtObject {
+          function contains(point: point): bool {
+            if (point.x < 0 || point.x > verticalDrawerRoot.width) return false
+            var chevronY = drawerRoot.drawerExtent - drawerRoot.revealExtent
+            return point.y >= chevronY && point.y <= verticalDrawerRoot.implicitHeight
+          }
+        }
+
+        Rectangle {
+          anchors.fill: expandIcon
+          visible: root.overflowExpanded
+          color: drawerRoot.openFill
+          radius: Style.cornerRadius
+        }
+
+        BarIconButton {
+          id: expandIcon
+          bar: root
+          width: implicitWidth
+          height: implicitHeight
+          y: drawerRoot.drawerExtent - drawerRoot.revealExtent
+          text: "\uf053"
+          textRotation: 90
+          onPressed: function(button) { drawerRoot.chevronPressed(button) }
+        }
+
+        Item {
+          y: expandIcon.height
+          anchors.horizontalCenter: parent.horizontalCenter
+          width: root.barSize
+          height: drawerRoot.drawerExtent
+          clip: true
+
+          Column {
+            id: drawerColumn
+            y: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 0
+            layer.enabled: true
+
+            Repeater {
+              model: drawerRoot.pluginEntries
+
+              ModuleSlot {
+                required property var modelData
+                entry: modelData.entry
+                region: modelData.region
+              }
+            }
+
+            Repeater {
+              model: drawerRoot.trayItems
+              OverflowTrayItem {}
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Menu, tooltip text, and symbolic detection go through the tray host so
+  // its manage popup and menu stack stay the single owner of tray state.
+  component OverflowTrayItem: Item {
+    id: trayItemRoot
+
+    required property var modelData
+    readonly property var tray: root.trayHostItem
+    readonly property bool symbolic: !!tray && tray.iconIsSymbolic(modelData.icon)
+    readonly property bool tooltipHovered: visible && opacity > 0 && trayPointer.containsMouse
+
+    implicitWidth: Style.bar.iconSlot
+    implicitHeight: Style.bar.iconSlot
+
+    function displayMenu(mouse) {
+      if (tray) tray.openTrayMenu(modelData, trayItemRoot, mouse)
+    }
+
+    Image {
+      id: trayIconImage
+      anchors.centerIn: parent
+      width: Style.space(12)
+      height: Style.space(12)
+      fillMode: Image.PreserveAspectFit
+      sourceSize.width: Math.round(width * Screen.devicePixelRatio)
+      sourceSize.height: Math.round(height * Screen.devicePixelRatio)
+      source: String(trayItemRoot.modelData.icon || "")
+      visible: !trayItemRoot.symbolic
+      layer.enabled: trayItemRoot.symbolic
+    }
+
+    MultiEffect {
+      anchors.fill: trayIconImage
+      source: trayIconImage
+      visible: trayItemRoot.symbolic
+      colorization: 1.0
+      colorizationColor: root.foreground
+    }
+
+    MouseArea {
+      id: trayPointer
+      anchors.fill: parent
+      acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onEntered: if (trayItemRoot.tray) root.showTooltip(trayItemRoot, trayItemRoot.tray.trayTooltip(trayItemRoot.modelData))
+      onExited: root.hideTooltip(trayItemRoot)
+      onPressed: function(mouse) {
+        if (mouse.button === Qt.RightButton) {
+          trayItemRoot.displayMenu(mouse)
+          mouse.accepted = true
+        }
+      }
+      onClicked: function(mouse) {
+        if (mouse.button === Qt.RightButton) {
+          mouse.accepted = true
+        } else if (mouse.button === Qt.MiddleButton) {
+          trayItemRoot.modelData.secondaryActivate()
+        } else if (trayItemRoot.modelData.onlyMenu) {
+          trayItemRoot.displayMenu(mouse)
+        } else {
+          trayItemRoot.modelData.activate()
+        }
+      }
+      onWheel: function(wheel) {
+        trayItemRoot.modelData.scroll(wheel.angleDelta.y, false)
+      }
+    }
+  }
+
   component ModuleList: Loader {
     id: moduleListRoot
 
@@ -1788,6 +2075,8 @@ Item {
       var w = root.barWidgetRegistry.widgets
       if (customType) return null
       var registryName = root.canonicalWidgetId(moduleName)
+      var overlay = root.overlayWidgetComponent(registryName)
+      if (overlay) return overlay
       return w[registryName] ? w[registryName].component : null
     }
     readonly property bool qmlCustom: customType === "qml"
