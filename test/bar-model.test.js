@@ -1,6 +1,6 @@
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
-const { partitionSection, inlineSettingsDelta } = require("../BarModel.js")
+const { partitionSection, inlineSettingsDelta, entrySettings } = require("../BarModel.js")
 
 describe("partitionSection", () => {
   it("puts entries without overflow on main and keeps order", () => {
@@ -61,5 +61,30 @@ describe("inlineSettingsDelta overflow", () => {
     assert.deepEqual(inlineSettingsDelta(current, next), [
       { region: "center", index: 0, entry: next.center[0] }
     ])
+  })
+
+  it("still returns a settings delta when overflow stays true and format changes", () => {
+    const current = {
+      left: [],
+      center: [],
+      right: [{ id: "omarchy.clock", overflow: true, format: "HH:mm" }]
+    }
+    const next = {
+      left: [],
+      center: [],
+      right: [{ id: "omarchy.clock", overflow: true, format: "hh:mm a" }]
+    }
+    assert.deepEqual(inlineSettingsDelta(current, next), [
+      { region: "right", index: 0, entry: next.right[0] }
+    ])
+  })
+})
+
+describe("entrySettings", () => {
+  it("omits id and overflow from the settings bag", () => {
+    assert.deepEqual(
+      entrySettings({ id: "omarchy.clock", overflow: true, format: "HH:mm" }),
+      { format: "HH:mm" }
+    )
   })
 })

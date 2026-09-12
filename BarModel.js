@@ -11,7 +11,7 @@ function entrySettings(entry) {
   if (!isPlainObject(entry)) return {}
   var copy = {}
   for (var key in entry) {
-    if (key === "id") continue
+    if (key === "id" || key === "overflow") continue
     copy[key] = entry[key]
   }
   return copy
@@ -42,7 +42,7 @@ function pinTrayToInner(entries, section) {
 }
 
 function entryOverflow(entry) {
-  return entrySettings(entry).overflow === true
+  return isPlainObject(entry) && entry.overflow === true
 }
 
 function partitionSection(entries) {
