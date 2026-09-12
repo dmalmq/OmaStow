@@ -2,38 +2,47 @@
 
 Back to [overview](overview.md).
 
-This is the visual contract for Phase 4, Phase 5, and Phase 7. Tokens come from the live Aether theme on this machine. `Color.bar.background` is `#00151c`. `Color.bar.text` is `#d1c1bf`. `Style.bar.sizeHorizontal` is 26. `Style.bar.iconSlot` is 27. `Style.font.body` is 12. `Style.cornerRadius` is 0. `gaps_out` is 10, so `Style.gapsOut` is 5.
+Default is a same-bar drawer, not a second strip. Tokens match the live Aether bar. `Color.bar.background` is `#00151c`. `Style.bar.sizeHorizontal` is 26. `Style.bar.iconSlot` is 27. `Style.cornerRadius` is 0.
 
-The throwaway mock is [`.scratch/overflow-look/index.html`](../.scratch/overflow-look/index.html). It is not production code.
+The throwaway mock is [`.scratch/overflow-look/index.html`](../.scratch/overflow-look/index.html). The cluster shots are the closest picture of this default.
+
+## What Omarchy already does
+
+`omarchy.tray` splits StatusNotifier items into pinned, drawer, and hidden. Unpinned apps default to the drawer. Hover the left chevron and they slide out on the same bar. Right-click the chevron to pin or hide.
+
+Bar widgets have no equivalent. Clock, media, audio, and every other plugin stay painted for as long as they sit in `bar.layout`.
 
 ## Collapsed
 
-The main bar is the stock Omarchy edge. Same height, same fill, same padding. Windows stay 10px below it.
+The bar stays 26px. Windows do not move.
 
-The only new chrome is a down chevron in a 27px slot, immediately left of the tray. Idle fill is none. Open fill is `selected-fill-alpha` 0.18. It must not copy the tray’s left chevron. Overflow points at the desktop. Tray points along the bar.
+One overflow chevron sits with the tray, pointing along the bar the way the tray chevron already does. Idle fill is none. Open fill is `selected-fill-alpha` 0.18.
 
-No second strip. No extra exclusive zone. No window jump.
+Pinned tray apps and non-overflowed plugins stay visible. Overflowed plugins and unpinned tray apps are gone until the drawer opens.
 
-## Expanded, chosen. Inset
+If the tray widget is present, hide its own expander. One chevron, one drawer.
 
-A second 26px row in the same `PanelWindow`, on the desktop side of the main row.
+## Expanded, chosen. Same-bar drawer
 
-- 5px gap (`Style.gapsOut`) between the rows.
-- Overflow fill is `Color.background` shades at about 94% alpha, not a new color.
-- Hairline on the overflow’s top edge, foreground at 0.25 alpha. Bottom edge at 0.4 alpha, matching `normal-border-alpha`.
-- Overflow widgets keep left, center, and right.
-- Exclusive zone stays `barSize`. The strip overlays the window. It does not push gaps.
+The bar gets wider. Items slide out of the chevron on the same row, clipped like `Tray.qml`’s `revealExtent`. Exclusive zone stays `barSize`.
 
-Click, hover, and the IPC toggle all show this same expanded look. Hover uses the same geometry. Do not invent a third peek style.
+The drawer holds two kinds of thing, in one row:
 
-The chevron rotates to point at the main bar while open.
+- Bar plugins with `overflow: true` on their layout entry, rendered through `ModuleSlot`.
+- Unpinned tray applications, rendered with the existing tray item delegate.
 
-## Rejected treatments
+Pinned tray apps stay outside the drawer. Hidden tray apps stay hidden.
 
-**Flush.** A second row welded to the first, same fill, no gap. Reads as a 52px bar. Easy to drop on. Hides that this is overlay, not reserved space.
+Click, hover, and the IPC toggle all show this same open state. Motion copies the tray drawer, about 600ms, not a second-row grow.
 
-**Cluster.** A right-packed strip under the chevron, only as wide as the hidden widgets. Closest to Bartender. Weak as a drop target for the rest of the screen. Revisit only if overflow stays a handful of icons and drag-into-empty is solved another way.
+## Not the default
 
-## Motion
+**Inset second strip.** A row below the bar. Keep it as a later option. It is not v1.
 
-The row grows from 0 to 26px on the desktop axis. About 160ms, `Easing.OutCubic`, the same family as the open-panel mark. No bounce. `prefers-reduced-motion` skips it.
+**Flush taller bar.** Rejected.
+
+## Choosing membership
+
+Drag a plugin onto the open drawer to set `overflow: true`. Drag it out to clear the flag. Auto-expand the drawer while a drag is active so a collapsed chevron is still a drop target.
+
+Tray apps keep pin and hide through the existing manage popup, now on the unified chevron.

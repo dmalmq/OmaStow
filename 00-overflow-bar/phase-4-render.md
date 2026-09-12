@@ -1,26 +1,26 @@
-# Phase 4. Render the overflow row
+# Phase 4. Render the same-bar drawer
 
 Back to [overview](overview.md).
 
 ## Goal
 
-Overflowed entries render on a second row of the same `BarPanel`. The row is present but collapsed. A chevron sits on the bar as chrome, not as a layout id.
+Overflowed plugins and unpinned tray apps render in one clipped drawer on the main bar. Collapsed, only the chevron shows. The chevron is bar chrome, not a layout id.
 
 ## Changes
 
 - After `pinTrayToInner` in `normalizeLayout`, partition each section.
 - Main `ModuleList` Repeaters consume `section.main`.
-- Add one overflow row inside `horizontalBar` / `verticalBar` that Repeaters `left.overflow + center.overflow + right.overflow` through `ModuleSlot`.
-- Chevron control in `Bar.qml`. Visible when the overflow list is non-empty or a drag is active.
-- Collapse by height or width 0 and clip. Do not unmap the row.
-- Do not add a second `PanelWindow`.
+- Add a drawer next to the tray, copied from `Tray.qml`’s `drawerArea` and `revealExtent`.
+- Drawer contents are overflowed `ModuleSlot`s, then unpinned tray items if `omarchy.tray` is in the layout.
+- Hide the tray widget’s own expander when this drawer exists.
+- Chevron visible when the drawer list is non-empty or a drag is active.
 
 ## Data structures
 
-`layoutConfig` stays `{ left, center, right }`. Derived view: `{ left, center, right }` of `PartitionedSection`. Session flag `overflowExpanded: boolean`, default false.
+`layoutConfig` stays `{ left, center, right }`. Derived `PartitionedSection` per region. Drawer model is overflow entries in left, then center, then right order, plus tray items whose bucket is `drawer`. Session flag `overflowExpanded: boolean`, default false.
 
 ## Verification
 
 Static: `node --test`. `qmllint` on `Bar.qml`.
 
-Runtime: set one right-section entry to `"overflow": true` in `shell.json`. Restart the shell. The widget is absent from the main row. Expand is still Phase 5, so a temporary `overflowExpanded: true` default is allowed only long enough to screenshot the row, then revert the default.
+Runtime: set one right-section plugin to `"overflow": true`. Restart the shell. The plugin is gone from the open bar. Leave `overflowExpanded` true only long enough to screenshot the open drawer, then revert the default.

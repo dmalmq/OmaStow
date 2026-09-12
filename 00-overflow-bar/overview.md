@@ -2,7 +2,7 @@
 
 ## Context
 
-Omarchy’s bar is a full-screen-edge `PanelWindow` that hosts every widget in `bar.layout`. There is no overflow. A Bartender-style second strip lets you park widgets off the main edge and drag them back.
+Omarchy’s bar is a full-screen-edge `PanelWindow` that hosts every widget in `bar.layout`. The tray already hides StatusNotifier apps behind a same-bar chevron. Plugins cannot join that drawer. The default product is one same-bar drawer that can hold both unpinned apps and overflowed plugins. A Bartender-style second strip is later, not v1.
 
 The plugin id is `dmalmq.omabar`. It is a `kind: "bar"` replacement. Only one bar is active. Enabling this plugin sets `bar.id` in `~/.config/omarchy/shell.json`.
 
@@ -14,8 +14,9 @@ Included:
 
 - Fork the first-party bar under `dmalmq.omabar`.
 - An `overflow: true` flag on each `bar.layout` entry.
-- A second row in the same `PanelWindow`, hidden until revealed.
-- Drag between the main row and the overflow row.
+- A same-bar overflow drawer, clipped and revealed like `omarchy.tray`.
+- Unpinned tray apps and overflowed plugins in that one drawer.
+- Drag a plugin into or out of the drawer.
 - Click, hover, and an IPC toggle to reveal.
 - A widget support matrix in the README.
 - Package and list on [omarchyplugins.com](https://omarchyplugins.com).
@@ -25,6 +26,7 @@ Excluded:
 - Menu-bar styling suites, clipboard, file shelf, live-activity notifications.
 - Time-of-day rules, overflow folders, named layout presets, in-QML gestures.
 - A second `PanelWindow` as the overflow surface.
+- A second row under the bar, as the default look.
 - A chevron `bar-widget` in the layout. The chevron is bar chrome.
 
 ## Constraints
@@ -44,9 +46,11 @@ Excluded:
 
 **Upstream overflow into `omarchy.bar`.** That is the only way to keep `ShellRoot`. Keep the fork diff small enough to offer as a later PR. Do not block the plugin on maintainer review.
 
-**Second `PanelWindow` docked outside the bar.** This matches Bartender’s separate strip. It also requires rewriting `moduleDropAtScene` because drops outside the source window are discarded. Rejected as the default. Revisit only if the same-window row cannot look like a strip.
+**Second `PanelWindow` docked outside the bar.** Rejected. `moduleDropAtScene` discards drops outside the source window.
 
-**Same `PanelWindow`, second row.** Chosen. Module slots share `root.moduleSlots`. Exclusive zone stays at main `barSize` so the overflow row overlays the desktop. Auto-expand during drag so collapsed slots have size.
+**Same `PanelWindow`, second row.** Mocked as inset. Not the default. Users already know the tray drawer.
+
+**Same-bar drawer.** Chosen. Copy `Tray.qml`’s clip and `revealExtent`. Overflowed `ModuleSlot`s and unpinned tray items share that drawer. The bar grows along its length. Exclusive zone does not change. Drag stays in one window.
 
 **`layout.overflow` as a fourth region.** Loses which of left, center, or right the widget belonged to, or duplicates that fact. Rejected. Keep section membership. Add `overflow: true` on the entry.
 
@@ -65,17 +69,17 @@ No browser control skill applies. Runtime proof is the live Omarchy session.
 
 ## Look
 
-Collapsed and expanded treatments are in [look.md](look.md). The chosen expanded look is the inset strip. Flush and cluster were mocked and rejected.
+Collapsed and expanded treatments are in [look.md](look.md). The chosen expanded look is a same-bar drawer. Inset and flush stay as later strip options.
 
 ## Phases
 
 1. [Scaffold the fork](phase-1-scaffold.md)
 2. [Partition model and tests](phase-2-partition.md)
 3. [Load the fork and probe widgets](phase-3-load.md)
-4. [Render the overflow row](phase-4-render.md)
-5. [Reveal the row](phase-5-reveal.md)
-6. [Drag across strips](phase-6-drag.md)
-7. [Orientation, exclusive zone, theme](phase-7-polish.md)
+4. [Render the same-bar drawer](phase-4-render.md)
+5. [Reveal the drawer](phase-5-reveal.md)
+6. [Drag into the drawer](phase-6-drag.md)
+7. [Orientation and theme](phase-7-polish.md)
 8. [Support matrix and README](phase-8-docs.md)
 9. [Validate and publish](phase-9-publish.md)
 
