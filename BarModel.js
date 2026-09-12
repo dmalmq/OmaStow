@@ -41,6 +41,21 @@ function pinTrayToInner(entries, section) {
   return result
 }
 
+function entryOverflow(entry) {
+  return entrySettings(entry).overflow === true
+}
+
+function partitionSection(entries) {
+  var values = Array.isArray(entries) ? entries : []
+  var main = []
+  var overflow = []
+  for (var i = 0; i < values.length; i++) {
+    if (entryOverflow(values[i])) overflow.push(values[i])
+    else main.push(values[i])
+  }
+  return { main: main, overflow: overflow }
+}
+
 function moduleString(entry, key, fallback) {
   var settings = entrySettings(entry)
   var value = settings[key]
@@ -92,6 +107,7 @@ function inlineSettingsDelta(current, next) {
     if (a.length !== b.length) return null
     for (var j = 0; j < a.length; j++) {
       if (entryId(a[j]) !== entryId(b[j])) return null
+      if (entryOverflow(a[j]) !== entryOverflow(b[j])) return null
       if (JSON.stringify(a[j]) === JSON.stringify(b[j])) continue
       if (customModuleType(a[j]) || customModuleType(b[j])) return null
       if (counts[entryId(b[j])] > 1) return null
@@ -218,6 +234,7 @@ if (typeof module !== "undefined") {
     entrySettings: entrySettings,
     entryId: entryId,
     pinTrayToInner: pinTrayToInner,
+    partitionSection: partitionSection,
     moduleString: moduleString,
     entryIndex: entryIndex,
     entriesBefore: entriesBefore,
