@@ -2,7 +2,6 @@
 set -euo pipefail
 
 src="$(cd "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-dest="${OMABAR_INSTALL_DIR:-$HOME/.config/omarchy/plugins/dmalmq.omabar}"
 manifest="$src/manifest.json"
 
 if [[ ! -f "$manifest" ]]; then
@@ -11,10 +10,12 @@ if [[ ! -f "$manifest" ]]; then
 fi
 
 id="$(jq -r '.id // empty' -- "$manifest")"
-if [[ "$id" != "dmalmq.omabar" ]]; then
-  printf 'install-local: %s is not dmalmq.omabar (id=%s)\n' "$src" "$id" >&2
+if [[ "$id" != "dmalmq.omastow" ]]; then
+  printf 'install-local: %s is not dmalmq.omastow (id=%s)\n' "$src" "$id" >&2
   exit 1
 fi
+
+dest="${OMASTOW_INSTALL_DIR:-$HOME/.config/omarchy/plugins/$id}"
 
 mkdir -p -- "$dest"
 dest="$(cd -- "$dest" && pwd)"

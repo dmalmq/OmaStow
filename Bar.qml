@@ -1213,6 +1213,16 @@ Item {
     }
   }
 
+  // omarchy-toggle-bar still hits omarchy.bar. Overflow is this plugin's target.
+  IpcHandler {
+    target: "dmalmq.omastow"
+
+    function toggleOverflow(): string {
+      root.overflowExpanded = !root.overflowExpanded
+      return "ok"
+    }
+  }
+
   Variants {
     model: Quickshell.screens
 
@@ -1770,7 +1780,12 @@ Item {
     readonly property var pluginEntries: root.overflowEntries()
     readonly property var trayItems: root.trayHostItem ? root.trayHostItem.drawerItems : []
     readonly property int animationDuration: 600
-    property real revealProgress: root.overflowExpanded ? 1 : 0
+    // Leave on this drawer. A shared hover bool collapses a still-hovered
+    // copy when the pointer leaves another monitor.
+    property bool hoverHeld: false
+    property bool dragHeld: false
+    readonly property bool open: root.overflowExpanded || hoverHeld || dragHeld
+    property real revealProgress: open ? 1 : 0
     readonly property real drawerExtent: drawerContent.item ? drawerContent.item.drawerExtent : 0
     readonly property real revealExtent: drawerExtent * revealProgress
     readonly property color openFill: Style.selectedFillFor(root.barForeground, Color.accent, root.urgent)
@@ -1786,7 +1801,9 @@ Item {
     }
 
     function chevronPressed(button) {
-      if (button === Qt.RightButton && root.trayHostItem)
+      if (button === Qt.LeftButton)
+        root.overflowExpanded = !root.overflowExpanded
+      else if (button === Qt.RightButton && root.trayHostItem)
         root.trayHostItem.managePopupOpen = !root.trayHostItem.managePopupOpen
     }
 
@@ -1814,9 +1831,14 @@ Item {
           }
         }
 
+        HoverHandler {
+          onHoveredChanged: drawerRoot.hoverHeld = hovered
+          Component.onDestruction: if (hovered) drawerRoot.hoverHeld = false
+        }
+
         Rectangle {
           anchors.fill: expandIcon
-          visible: root.overflowExpanded
+          visible: drawerRoot.open
           color: drawerRoot.openFill
           radius: Style.cornerRadius
         }
@@ -1882,9 +1904,14 @@ Item {
           }
         }
 
+        HoverHandler {
+          onHoveredChanged: drawerRoot.hoverHeld = hovered
+          Component.onDestruction: if (hovered) drawerRoot.hoverHeld = false
+        }
+
         Rectangle {
           anchors.fill: expandIcon
-          visible: root.overflowExpanded
+          visible: drawerRoot.open
           color: drawerRoot.openFill
           radius: Style.cornerRadius
         }

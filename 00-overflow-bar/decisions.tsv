@@ -3,7 +3,7 @@ ts	phase	decision	why	evidence	result
 2026-09-12T02:18:00Z	research	same PanelWindow second row, not a second layer surface	moduleDropAtScene discards pointers outside the source contentItem	/usr/share/omarchy/shell/plugins/bar/Bar.qml:913-920	chosen
 2026-09-12T02:18:00Z	research	overflow flag on the layout entry, not a fourth region	keeps left/center/right and matches inline widget settings	/usr/share/omarchy/shell/plugins/bar/README.md	chosen
 2026-09-12T02:18:00Z	research	treat overflow flips as structural in inlineSettingsDelta	same ids in the same order would otherwise skip a rebuild	/usr/share/omarchy/shell/plugins/bar/BarModel.js:76-101	open
-2026-09-12T02:18:00Z	research	IpcHandler target dmalmq.omabar, not shell call	callIfLoaded only has panel overlay menu loaders	/usr/share/omarchy/shell/shell.qml:1279-1286	chosen
+2026-09-12T02:18:00Z	research	IpcHandler target dmalmq.omastow, not shell call	callIfLoaded only has panel overlay menu loaders	/usr/share/omarchy/shell/shell.qml:1279-1286	chosen
 2026-09-12T02:18:00Z	research	copy packaged bar, do not clone omarchy.bar for publish	clone id and clonedFrom are not the marketplace contract. required-property clone bugs	github.com/basecamp/omarchy/issues/8202	chosen
 2026-09-12T02:18:00Z	research	expect media to work through PluginFirstPartyServiceApi	kind bar gets proxies for idle media nightlight notifications	/usr/share/omarchy/shell/services/PluginFirstPartyServiceApi.qml	open
 2026-09-12T06:52:00Z	load	dmalmq.omabar is the active bar	plugin enable plus restart left namespace omarchy-bar at 2400x24 with the same widgets	hyprctl layers after pid 390421, bar.after.png	chosen
@@ -13,3 +13,5 @@ ts	phase	decision	why	evidence	result
 2026-09-12T03:26:00Z	look	inset strip for expanded, stock bar plus down chevron for collapsed	flush reads as a taller bar. cluster is a poor drop target. tokens from live Aether bar	.scratch/overflow-look/shots/inset-expanded.png	superseded
 2026-09-12T03:34:00Z	look	same-bar drawer as default, apps and plugins in one chevron	tray already collapses StatusNotifier items. plugins cannot join it. user wants that menu, not a second strip	/usr/share/omarchy/shell/plugins/bar/widgets/Tray.qml:155-159	chosen
 2026-09-12T16:20:00Z	render	overlay local Tray.qml for omarchy.tray	configureBar gives a third-party bar publicBarWidgetSnapshot of the host registry. widgets/Tray.manifest.json is not a scanned plugin	/usr/share/omarchy/shell/shell.qml publicBarWidgetSnapshot, PluginRegistry.qml	chosen
+2026-09-12T21:06:00Z	publish	name OmaStow, id dmalmq.omastow	OmaBar Drawer already listed as io.github.amitcpatel.omabar-drawer	plugins.omarchy.org, github.com/amitcpatel/omabar-drawer	chosen
+2026-09-12T21:22:00Z	reveal	shared overflowExpanded latch, per-drawer hoverHeld	click and IPC open every monitor. a shared hover bool would collapse the still-hovered copy when the pointer leaves another	Bar.qml OverflowDrawer open OR, BarPanel barHoverCount	chosen

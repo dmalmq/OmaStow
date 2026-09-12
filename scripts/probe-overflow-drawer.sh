@@ -55,7 +55,7 @@ PY
 "$src/scripts/install-local.sh"
 
 if [[ "$mode" == "expanded" ]]; then
-  installed="${OMABAR_INSTALL_DIR:-$HOME/.config/omarchy/plugins/dmalmq.omabar}/Bar.qml"
+  installed="${OMASTOW_INSTALL_DIR:-$HOME/.config/omarchy/plugins/dmalmq.omastow}/Bar.qml"
   python3 - "$installed" <<'PY'
 from pathlib import Path
 path = Path(__import__("sys").argv[1])

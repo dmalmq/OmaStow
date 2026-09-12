@@ -8,8 +8,8 @@ The fork renders as the active bar. `omarchy.media` still shows a live player. T
 
 ## Changes
 
-- Install to `~/.config/omarchy/plugins/dmalmq.omabar`.
-- Enable with `omarchy plugin enable dmalmq.omabar` (sets `bar.id`).
+- Install to `~/.config/omarchy/plugins/dmalmq.omastow`.
+- Enable with `omarchy plugin enable dmalmq.omastow` (sets `bar.id`).
 - Keep `IpcHandler { target: "omarchy.bar" }` so `omarchy-toggle-bar` still hits the loaded instance.
 - Record a widget matrix draft from this spike. Do not code overflow yet.
 - If the bar fails to appear, check `required` properties and `omarchy bar use built-in` before debugging features.

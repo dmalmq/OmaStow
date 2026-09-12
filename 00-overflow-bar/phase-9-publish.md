@@ -9,7 +9,7 @@ A public GitHub repo that `omarchy plugin add` can clone, plus a marketplace lis
 ## Changes
 
 - `omarchy plugin validate` on a clean checkout.
-- Push `github.com/dmalmq/Omabar`.
+- Push `github.com/dmalmq/OmaStow`.
 - Submit via [the publish form](https://plugins.omarchy.org/publish.html).
 - Do not keep `omarchy.clonedFrom` in the published manifest.
 

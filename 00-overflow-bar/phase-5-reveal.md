@@ -10,13 +10,13 @@ Click, hover, and a Hyprland-bound IPC toggle expand and collapse the same-bar d
 
 - Chevron click toggles `overflowExpanded`.
 - Hover-to-reveal, matching `omarchy.tray`.
-- `IpcHandler { target: "dmalmq.omabar"; function toggleOverflow(): void }`.
+- `IpcHandler { target: "dmalmq.omastow"; function toggleOverflow(): string }`.
 - Hyprland bind calls that IPC target. Do not use `omarchy-shell shell call`.
 - Motion copies the tray drawer duration, about 600ms.
 
 ## Data structures
 
-`OverflowReveal`: `{ expanded: boolean, hoverHeld: boolean, dragHeld: boolean }`. Derived `open = expanded || hoverHeld || dragHeld`. Not written to `shell.json`.
+`OverflowReveal`: `{ expanded: boolean, hoverHeld: boolean, dragHeld: boolean }`. Derived `open = expanded || hoverHeld || dragHeld`. Not written to `shell.json`. Click and IPC latch `overflowExpanded` on the shared Bar root so every monitor opens together. Hover stays on each OverflowDrawer.
 
 ## Verification
 

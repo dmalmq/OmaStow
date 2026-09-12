@@ -2,7 +2,7 @@
 
 Back to [overview](overview.md). Phase 8 rewrites this into the README.
 
-Probe date 2026-09-12. Host is this machine. Bar id `dmalmq.omabar`. Evidence lives in `.scratch/phase-3-load/` and is not committed.
+Probe date 2026-09-12. Host is this machine. Bar id was `dmalmq.omabar` at probe, now `dmalmq.omastow`. Evidence lives in `.scratch/phase-3-load/` and is not committed.
 
 ## Bar load
 
@@ -10,7 +10,7 @@ Probe date 2026-09-12. Host is this machine. Bar id `dmalmq.omabar`. Evidence li
 
 The 24px strip matched the built-in bar. Workspaces `1 2 3`, clock, tray, and the right-side icons were present. Measured from `bar.before.png` and `bar.after.png`.
 
-`omarchy toggle bar on` parked the layer at `y=-24`. `omarchy toggle bar off` restored `y=0`. `omarchy-toggle-bar` still talks to `omarchy.bar syncHidden`. Journal line from pid 390421: `Handler was registered but will not be used because another handler is registered for target omarchy.bar`. Toggle still moved this process's layer. Phase 5 should register `dmalmq.omabar` as well.
+`omarchy toggle bar on` parked the layer at `y=-24`. `omarchy toggle bar off` restored `y=0`. `omarchy-toggle-bar` still talks to `omarchy.bar syncHidden`. Journal line from pid 390421: `Handler was registered but will not be used because another handler is registered for target omarchy.bar`. Toggle still moved this process's layer. Phase 5 should register `dmalmq.omastow` as well.
 
 ## First-party widgets on this layout
 

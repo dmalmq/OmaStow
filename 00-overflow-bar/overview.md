@@ -4,7 +4,7 @@
 
 Omarchy’s bar is a full-screen-edge `PanelWindow` that hosts every widget in `bar.layout`. The tray already hides StatusNotifier apps behind a same-bar chevron. Plugins cannot join that drawer. The default product is one same-bar drawer that can hold both unpinned apps and overflowed plugins. A Bartender-style second strip is later, not v1.
 
-The plugin id is `dmalmq.omabar`. It is a `kind: "bar"` replacement. Only one bar is active. Enabling this plugin sets `bar.id` in `~/.config/omarchy/shell.json`.
+The plugin is **OmaStow** (`dmalmq.omastow`). It is a `kind: "bar"` replacement. Only one bar is active. Enabling this plugin sets `bar.id` in `~/.config/omarchy/shell.json`.
 
 This repo starts empty. The implementation base is the packaged first-party bar at `/usr/share/omarchy/shell/plugins/bar/` (`Bar.qml`, `BarModel.js`, `widgets/`). Omarchy is MIT. Keep DHH’s copyright next to yours.
 
@@ -12,7 +12,7 @@ This repo starts empty. The implementation base is the packaged first-party bar 
 
 Included:
 
-- Fork the first-party bar under `dmalmq.omabar`.
+- Fork the first-party bar under `dmalmq.omastow`.
 - An `overflow: true` flag on each `bar.layout` entry.
 - A same-bar overflow drawer, clipped and revealed like `omarchy.tray`.
 - Unpinned tray apps and overflowed plugins in that one drawer.
@@ -90,7 +90,7 @@ Shared checks live in [testing.md](testing.md).
 Project-level:
 
 ```sh
-omarchy plugin validate "$HOME/.config/omarchy/plugins/dmalmq.omabar"
+omarchy plugin validate "$HOME/.config/omarchy/plugins/dmalmq.omastow"
 node --test test/bar-model.test.js
 qmllint -I "$OMARCHY_PATH/shell" Bar.qml widgets/*.qml
 omarchy restart shell

@@ -17,8 +17,8 @@ if [[ ! -f "$manifest" ]]; then
 fi
 
 id="$(jq -r '.id // empty' -- "$manifest")"
-if [[ "$id" != "dmalmq.omabar" ]]; then
-  printf 'sync-from-omarchy: %s is not dmalmq.omabar (id=%s)\n' "$dest" "$id" >&2
+if [[ "$id" != "dmalmq.omastow" ]]; then
+  printf 'sync-from-omarchy: %s is not dmalmq.omastow (id=%s)\n' "$dest" "$id" >&2
   exit 1
 fi
 
