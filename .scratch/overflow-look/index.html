@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Omabar look prototype</title>
+  <style>
+    :root {
+      --bg: #00151c;
+      --fg: #d1c1bf;
+      --accent: #ed2d4d;
+      --muted: #626262;
+      --desk: #061920;
+      --window: #051318;
+      --bar-h: 26px;
+      --gap: 10px;
+      --inset: 5px;
+      --pad: 8px;
+      --slot: 27px;
+      --font: 12px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: #030d10;
+      color: var(--fg);
+      font: var(--font)/26px ui-monospace, "CaskaydiaMono Nerd Font", "JetBrains Mono", monospace;
+    }
+    .page {
+      padding: 24px 28px 32px;
+      max-width: 1320px;
+    }
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    .lede {
+      color: var(--muted);
+      margin: 0 0 16px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .controls button {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid rgba(209,193,191,0.4);
+      height: 28px;
+      padding: 0 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .controls button[aria-pressed="true"] {
+      background: rgba(209,193,191,0.18);
+      border-color: var(--fg);
+    }
+    .stage {
+      position: relative;
+      width: 1280px;
+      height: 220px;
+      background:
+        radial-gradient(800px 180px at 70% 120%, #1f3036 0%, transparent 70%),
+        var(--desk);
+      overflow: hidden;
+      border: 1px solid rgba(209,193,191,0.18);
+    }
+    .window {
+      position: absolute;
+      left: var(--gap);
+      right: 420px;
+      top: calc(var(--bar-h) + var(--gap));
+      bottom: 24px;
+      background: var(--window);
+      border: 1px solid #797f8a;
+      padding: 10px 12px;
+      color: #9eb7b3;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .window b { color: var(--fg); font-weight: 600; }
+    .chrome {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+    }
+    .bar, .overflow {
+      height: var(--bar-h);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 var(--pad);
+      color: var(--fg);
+      background: var(--bg);
+    }
+    .bar { position: relative; z-index: 2; }
+    .left, .right, .center {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 100%;
+    }
+    .right { justify-content: flex-end; }
+    .center { justify-content: center; }
+    .slot {
+      min-width: var(--slot);
+      height: var(--bar-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .ws { min-width: 16px; padding: 0 5px; color: var(--muted); }
+    .ws.on { color: var(--fg); }
+    .clock { padding: 0 8px; letter-spacing: 0.02em; }
+    .ico {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+    .logo {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .chevron {
+      width: var(--slot);
+      height: var(--bar-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .chevron[data-open="true"] {
+      background: rgba(209,193,191,0.18);
+    }
+    .chevron svg { width: 10px; height: 10px; fill: var(--fg); }
+    .tray-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .overflow {
+      position: relative;
+      z-index: 1;
+      display: none;
+    }
+    body[data-state="expanded"] .overflow { display: grid; }
+    body[data-variant="flush"] .overflow {
+      background: var(--bg);
+    }
+    body[data-variant="inset"] .overflow {
+      margin-top: var(--inset);
+      background: rgba(6, 25, 32, 0.94);
+      border-top: 1px solid rgba(209,193,191,0.25);
+      border-bottom: 1px solid rgba(209,193,191,0.4);
+    }
+    body[data-variant="cluster"] .overflow {
+      display: none;
+    }
+    body[data-variant="cluster"][data-state="expanded"] .cluster {
+      display: flex;
+    }
+    .cluster {
+      display: none;
+      position: absolute;
+      top: calc(var(--bar-h) + var(--inset));
+      right: var(--pad);
+      height: var(--bar-h);
+      align-items: center;
+      gap: 2px;
+      padding: 0 6px;
+      background: rgba(0, 21, 28, 0.92);
+      border: 1px solid rgba(209,193,191,0.4);
+      z-index: 3;
+    }
+    .caption {
+      margin-top: 10px;
+      color: var(--muted);
+      max-width: 1280px;
+      line-height: 1.45;
+    }
+    .note { color: var(--fg); }
+  </style>
+</head>
+<body data-variant="inset" data-state="collapsed">
+  <div class="page">
+    <h1>Overflow strip look</h1>
+    <p class="lede">Throwaway mock against the live Aether bar. 26px, opaque #00151c, 12px mono, square corners. Exclusive zone stays one bar tall, so the second strip overlays the window below.</p>
+    <div class="controls">
+      <button type="button" data-variant="flush">Flush</button>
+      <button type="button" data-variant="inset" aria-pressed="true">Inset</button>
+      <button type="button" data-variant="cluster">Cluster</button>
+      <button type="button" data-state="collapsed" aria-pressed="true">Collapsed</button>
+      <button type="button" data-state="expanded">Expanded</button>
+    </div>
+    <div class="stage" id="stage">
+      <div class="window">
+        <b>~/dev/Omabar</b><br />
+        main *  00-overflow-bar/<br />
+        The top of this window sits 10px under the main bar.<br />
+        Overflow must cover it, not push it. That is the overlay contract.
+      </div>
+      <div class="chrome">
+        <div class="bar">
+          <div class="left">
+            <span class="slot"><span class="logo" title="menu"></span></span>
+            <span class="slot ws">1</span>
+            <span class="slot ws on">2</span>
+            <span class="slot ws">3</span>
+            <span class="slot ws">4</span>
+            <span class="slot ws">6</span>
+          </div>
+          <div class="center"><span class="clock">Saturday 12:23</span></div>
+          <div class="right">
+            <span class="slot" title="audio">
+              <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 6v4h3l3 3V3L6 6H3zm8 2a3 3 0 0 0-1-2.2v4.4A3 3 0 0 0 11 8z"/></svg>
+            </span>
+            <span class="slot" title="network">
+              <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 11l2-2a9 9 0 0 1 10 0l2 2-1.4 1.4a7 7 0 0 0-11.2 0zm4 0 1.5-1.5a4.5 4.5 0 0 1 5 0L13 11l-1.4 1.4a2.5 2.5 0 0 0-3.2 0zM8 13.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4z"/></svg>
+            </span>
+            <span class="slot" title="power">89%</span>
+            <button class="chevron" id="chevron" type="button" aria-label="Overflow" data-open="false">
+              <svg id="chevronIcon" viewBox="0 0 12 12"><path d="M2.2 4.2 6 8l3.8-3.8L8.7 3 6 5.7 3.3 3z"/></svg>
+            </button>
+            <span class="slot"><span class="tray-dot" style="background:#42afaf"></span></span>
+            <span class="slot"><span class="tray-dot" style="background:#797f8a"></span></span>
+            <span class="slot" title="tray">
+              <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M7.6 2.2 3.8 6l3.8 3.8L6.5 11 1.7 6l4.8-5z"/></svg>
+            </span>
+          </div>
+        </div>
+        <div class="overflow" id="overflow">
+          <div class="left">
+            <span class="slot" title="weather">
+              <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M12 7a3 3 0 0 0-5.8-1A3.5 3.5 0 1 0 6 13h6.2A2.8 2.8 0 0 0 12 7z"/></svg>
+            </span>
+          </div>
+          <div class="center">
+            <span class="slot" title="media">♩ Tear in the Rain</span>
+          </div>
+          <div class="right">
+            <span class="slot" title="bluetooth">
+              <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 1 12 5 8.8 8 12 11 7 15V9.2L4.2 12l-.9-.9L6.6 8 3.3 4.9l.9-.9L7 6.8V1zm1.5 9.3L10 12.2 8.5 13.4zm0-6.6v2.3L10 3.8z"/></svg>
+            </span>
+            <span class="slot" title="mic">
+              <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a2.2 2.2 0 0 0-2.2 2.2v4A2.2 2.2 0 0 0 8 9.4a2.2 2.2 0 0 0 2.2-2.2v-4A2.2 2.2 0 0 0 8 1zM4 7.2v.6a4 4 0 0 0 3.3 3.9V13H5.5v1.5h5V13H8.7v-1.3A4 4 0 0 0 12 7.8v-.6h-1.5v.6a2.5 2.5 0 0 1-5 0v-.6z"/></svg>
+            </span>
+          </div>
+        </div>
+        <div class="cluster" id="cluster">
+          <span class="slot" title="weather">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M12 7a3 3 0 0 0-5.8-1A3.5 3.5 0 1 0 6 13h6.2A2.8 2.8 0 0 0 12 7z"/></svg>
+          </span>
+          <span class="slot">♩ Tear in the Rain</span>
+          <span class="slot" title="bluetooth">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 1 12 5 8.8 8 12 11 7 15V9.2L4.2 12l-.9-.9L6.6 8 3.3 4.9l.9-.9L7 6.8V1zm1.5 9.3L10 12.2 8.5 13.4zm0-6.6v2.3L10 3.8z"/></svg>
+          </span>
+          <span class="slot" title="mic">
+            <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a2.2 2.2 0 0 0-2.2 2.2v4A2.2 2.2 0 0 0 8 9.4a2.2 2.2 0 0 0 2.2-2.2v-4A2.2 2.2 0 0 0 8 1zM4 7.2v.6a4 4 0 0 0 3.3 3.9V13H5.5v1.5h5V13H8.7v-1.3A4 4 0 0 0 12 7.8v-.6h-1.5v.6a2.5 2.5 0 0 1-5 0v-.6z"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+    <p class="caption" id="caption"></p>
+  </div>
+  <script>
+    const captions = {
+      flush: {
+        collapsed: "Flush collapsed. The main bar is the stock 26px edge. The only new chrome is a down chevron in a 27px slot, sitting inside the tray, using the same idle fill as other icon buttons.",
+        expanded: "Flush expanded. A second 26px row is welded to the first, same fill, no gap. It reads as a taller bar. It covers the 10px window gap and the top of the terminal. Easy drop target, weak second-bar signal."
+      },
+      inset: {
+        collapsed: "Inset collapsed. Same as flush collapsed. No second strip, no extra exclusive zone, no change to window position.",
+        expanded: "Inset expanded. 5px gap, fill #061920 at 94% alpha, hairline under the main bar. Overflow keeps left/center/right. The terminal shows through the gap. Overlay, not a taller exclusive zone."
+      },
+      cluster: {
+        collapsed: "Cluster collapsed. Same chevron. Overflow items are not implied until it opens.",
+        expanded: "Cluster expanded. A right-packed strip under the chevron, only as wide as the hidden widgets. Closest to Bartender's hidden bar. Weak as a drop target across the rest of the screen."
+      }
+    };
+    const buttons = document.querySelectorAll(".controls button");
+    const chevron = document.getElementById("chevron");
+    const chevronIcon = document.getElementById("chevronIcon");
+    function render() {
+      const variant = document.body.dataset.variant;
+      const state = document.body.dataset.state;
+      buttons.forEach((b) => {
+        if (b.dataset.variant) b.setAttribute("aria-pressed", String(b.dataset.variant === variant));
+        if (b.dataset.state) b.setAttribute("aria-pressed", String(b.dataset.state === state));
+      });
+      chevron.dataset.open = String(state === "expanded");
+      chevronIcon.style.transform = state === "expanded" ? "rotate(180deg)" : "none";
+      document.getElementById("caption").textContent = captions[variant][state];
+      history.replaceState(null, "", `#${variant}-${state}`);
+    }
+    buttons.forEach((b) => {
+      b.addEventListener("click", () => {
+        if (b.dataset.variant) document.body.dataset.variant = b.dataset.variant;
+        if (b.dataset.state) document.body.dataset.state = b.dataset.state;
+        render();
+      });
+    });
+    chevron.addEventListener("click", () => {
+      document.body.dataset.state = document.body.dataset.state === "expanded" ? "collapsed" : "expanded";
+      render();
+    });
+    const hash = location.hash.slice(1).split("-");
+    if (hash[0]) document.body.dataset.variant = hash[0];
+    if (hash[1]) document.body.dataset.state = hash[1];
+    render();
+  </script>
+</body>
+</html>

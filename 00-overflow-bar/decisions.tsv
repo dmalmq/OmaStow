@@ -1,0 +1,9 @@
+ts	phase	decision	why	evidence	result
+2026-09-12T02:18:00Z	research	fork kind bar instead of a companion overlay	overflow has to own layout and drag. flush-bar only watches config	/usr/share/omarchy/shell/plugins/README.md, github.com/scottjones/omarchy-flush-bar	chosen
+2026-09-12T02:18:00Z	research	same PanelWindow second row, not a second layer surface	moduleDropAtScene discards pointers outside the source contentItem	/usr/share/omarchy/shell/plugins/bar/Bar.qml:913-920	chosen
+2026-09-12T02:18:00Z	research	overflow flag on the layout entry, not a fourth region	keeps left/center/right and matches inline widget settings	/usr/share/omarchy/shell/plugins/bar/README.md	chosen
+2026-09-12T02:18:00Z	research	treat overflow flips as structural in inlineSettingsDelta	same ids in the same order would otherwise skip a rebuild	/usr/share/omarchy/shell/plugins/bar/BarModel.js:76-101	open
+2026-09-12T02:18:00Z	research	IpcHandler target dmalmq.omabar, not shell call	callIfLoaded only has panel overlay menu loaders	/usr/share/omarchy/shell/shell.qml:1279-1286	chosen
+2026-09-12T02:18:00Z	research	copy packaged bar, do not clone omarchy.bar for publish	clone id and clonedFrom are not the marketplace contract. required-property clone bugs	github.com/basecamp/omarchy/issues/8202	chosen
+2026-09-12T02:18:00Z	research	expect media to work through PluginFirstPartyServiceApi	kind bar gets proxies for idle media nightlight notifications	/usr/share/omarchy/shell/services/PluginFirstPartyServiceApi.qml	needs Phase 3 runtime
+2026-09-12T03:26:00Z	look	inset strip for expanded, stock bar plus down chevron for collapsed	flush reads as a taller bar. cluster is a poor drop target. tokens from live Aether bar	.scratch/overflow-look/shots/inset-expanded.png	chosen
