@@ -1,6 +1,6 @@
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
-const { partitionSection, inlineSettingsDelta, entrySettings, overflowEntries, moveModule } = require("../BarModel.js")
+const { partitionSection, inlineSettingsDelta, entrySettings, overflowEntries, moveModule, drawerChromeDropTarget } = require("../BarModel.js")
 
 describe("partitionSection", () => {
   it("puts entries without overflow on main and keeps order", () => {
@@ -119,6 +119,38 @@ describe("overflowEntries", () => {
 
   it("returns an empty list for a non-object layout", () => {
     assert.deepEqual(overflowEntries(undefined), [])
+  })
+})
+
+describe("drawerChromeDropTarget", () => {
+  const drawer = [
+    { kind: "plugin", region: "left", entry: { id: "omarchy.clock", overflow: true } },
+    { kind: "plugin", region: "center", entry: { id: "omarchy.media", overflow: true } },
+    { kind: "plugin", region: "right", entry: { id: "omarchy.power", overflow: true } }
+  ]
+
+  it("appends in the source section when the drawer has no plugins", () => {
+    assert.deepEqual(drawerChromeDropTarget([], "left", true), { region: "left", beforeName: "" })
+    assert.deepEqual(drawerChromeDropTarget(undefined, "center", false), { region: "center", beforeName: "" })
+  })
+
+  it("lands after the last drawer plugin on the far edge", () => {
+    assert.deepEqual(drawerChromeDropTarget(drawer, "left", true), { region: "right", beforeName: "" })
+  })
+
+  it("lands before the first drawer plugin on the near edge", () => {
+    assert.deepEqual(drawerChromeDropTarget(drawer, "right", false), { region: "left", beforeName: "omarchy.clock" })
+  })
+
+  it("moves a widget to the end of the drawer through moveModule", () => {
+    const layout = {
+      left: [{ id: "omarchy.clock", overflow: true }, "omarchy.workspaces"],
+      center: [],
+      right: ["omarchy.tray", { id: "omarchy.power", overflow: true }, "omarchy.audio"]
+    }
+    const target = drawerChromeDropTarget(overflowEntries(layout), "left", true)
+    assert.equal(moveModule(layout, "left", "omarchy.clock", target.region, target.beforeName, true), true)
+    assert.deepEqual(overflowEntries(layout).map(row => row.entry.id), ["omarchy.power", "omarchy.clock"])
   })
 })
 
