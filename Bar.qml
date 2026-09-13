@@ -53,6 +53,19 @@ Item {
   property var layoutConfig: fallbackBarConfig.layout
   property bool hostOwnsOverflowDrawer: true
   property bool overflowExpanded: false
+  // A panel summoned on a widget inside a collapsed drawer would anchor to a
+  // clipped icon. The drawer opens without its slide while this is set, so
+  // the popup lands under an icon the user can see.
+  property bool overflowRevealInstant: false
+  readonly property bool overflowPanelOpen: {
+    var owner = activePopout
+    if (!owner) return false
+    for (var i = 0; i < moduleSlots.length; i++) {
+      var slot = moduleSlots[i]
+      if (slot && slot.overflowSlot === true && slot.activeItem === owner) return true
+    }
+    return false
+  }
   property string centerAnchor: ""
   property bool requestedTransparent: false
   property bool useTransparentForeground: false
@@ -561,7 +574,9 @@ Item {
       if ("closeForPopoutSwitch" in activePopout) activePopout.closeForPopoutSwitch()
       else if ("close" in activePopout) activePopout.close()
     }
+    overflowRevealInstant = true
     activePopout = owner
+    Qt.callLater(function() { root.overflowRevealInstant = false })
   }
 
   function releasePopout(owner) {
@@ -1779,7 +1794,7 @@ Item {
     // copy when the pointer leaves another monitor.
     property bool hoverHeld: false
     readonly property bool dragHeld: root.barDragSource !== null
-    readonly property bool open: root.overflowExpanded || hoverHeld || dragHeld
+    readonly property bool open: root.overflowExpanded || hoverHeld || dragHeld || root.overflowPanelOpen
     property real revealProgress: open ? 1 : 0
     readonly property real drawerExtent: drawerContent.item ? drawerContent.item.drawerExtent : 0
     readonly property real revealExtent: drawerExtent * revealProgress
@@ -1799,6 +1814,7 @@ Item {
     Component.onDestruction: root.unregisterModuleSlot(drawerRoot)
 
     Behavior on revealProgress {
+      enabled: !root.overflowRevealInstant
       NumberAnimation { duration: drawerRoot.animationDuration; easing.type: Easing.OutCubic }
     }
 
