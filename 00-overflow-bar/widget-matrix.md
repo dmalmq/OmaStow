@@ -1,51 +1,70 @@
-# Widget matrix draft
+# Widget support matrix
 
-Back to [overview](overview.md). Phase 8 rewrites this into the README.
+Back to [overview](overview.md). This file is the support matrix. The README is a separate document.
 
-Probe date 2026-09-12. Host is this machine. Bar id was `dmalmq.omabar` at probe, now `dmalmq.omastow`. Evidence lives in `.scratch/phase-3-load/` and is not committed.
+A third-party `kind: "bar"` plugin receives a host `barWidgetRegistry` snapshot. OmaStow overlays only `omarchy.tray` through `overlayWidgetComponent`. Every other first-party widget loads from the host. A third-party `bar-widget` still paints on this bar. It does not receive a live service from another plugin through this bar.
 
-## Bar load
+`scripts/list-bar-widgets.sh` prints every discovered `bar-widget` id. Support, popup, and overflow columns are probe results. They are not generated. Overflow means `overflow: true` on the layout entry.
 
-`omarchy plugin enable dmalmq.omabar` set `bar.id`. `omarchy restart shell` exited 0. `omarchy-shell shell ping` returned `ok`. `hyprctl layers` showed `omarchy-bar` at `0,0 2400x24` on HDMI-A-2 after restart. Plugin list: `dmalmq.omabar` enabled and active, `omarchy.bar` not active.
+## Probe record
 
-The 24px strip matched the built-in bar. Workspaces `1 2 3`, clock, tray, and the right-side icons were present. Measured from `bar.before.png` and `bar.after.png`.
+Strip and popup columns for the saved layout come from the 2026-09-12 load probe, when `bar.id` was `dmalmq.omabar`. The bar id is now `dmalmq.omastow`. Overflow columns for `omamail`, `akshar.radio-atlas`, and `bjarneo.workspace-layout` come from the 2026-09-13 edge probe, which opened the drawer on this layout. `omarchy.power` summon was repeated on 2026-09-13 and still mapped no extra Hyprland layer. `omarchy.media` stays unproven. The user bus had no MPRIS names on 2026-09-13.
 
-`omarchy toggle bar on` parked the layer at `y=-24`. `omarchy toggle bar off` restored `y=0`. `omarchy-toggle-bar` still talks to `omarchy.bar syncHidden`. Journal line from pid 390421: `Handler was registered but will not be used because another handler is registered for target omarchy.bar`. Toggle still moved this process's layer. Phase 5 should register `dmalmq.omastow` as well.
+Screenshots live under `.scratch/` and are not committed.
 
-## First-party widgets on this layout
+## Status words
 
-| id | Painted | Popup | Notes |
-| --- | --- | --- | --- |
-| omarchy.menu | yes | not probed | Left edge of the strip. |
-| omarchy.workspaces | yes | not probed | `1 2 3` on the strip. |
-| omarchy.indicators | yes | not probed | Center cluster. Uses `firstPartyServiceFor` for idle, nightlight, notifications. |
-| omarchy.clock | yes | mixed | Time on the strip. `shell summon omarchy.clock` mapped overlay `omarchy-keyboard-panel`. |
-| omarchy.keyboard-layout | yes | not probed | |
-| omarchy.weather | yes | not probed | |
-| omarchy.system-update | yes | not probed | |
-| omarchy.tray | yes | not probed | Chevron cluster on the right. |
-| omarchy.agents | yes | not probed | |
-| omarchy.tailscale | yes | not probed | |
-| omarchy.bluetooth | yes | yes | `shell summon omarchy.bluetooth` opened the Bluetooth panel with paired devices. |
-| omarchy.network | yes | yes | `shell summon omarchy.network` opened Ethernet plus Wi-Fi list. |
-| omarchy.audio | yes | yes | `shell summon omarchy.audio` opened output and input devices. |
-| omarchy.monitor | yes | not probed | |
-| omarchy.power | yes | no | Icon on the strip. `shell summon omarchy.power` returned `ok`. No extra Hyprland overlay. No panel in the screenshot. |
-| omarchy.media | idle-hidden | not proven | Not on the saved layout. Enable placed it in center. `BarWidget.qml` sets `visible: hasMedia`. No MPRIS names on the session bus. `playerctl` is not installed. Removed again so the layout matches the backup. |
+`supported` means the widget painted on this bar.
 
-## Third-party widgets on this layout
+`partial` means the strip icon painted and the summoned panel did not.
 
-These have no first-party service from the replacement bar. They still painted on the strip.
+`unprobed` means the widget exists and this repo has no live proof on OmaStow.
 
-| id | Painted | Popup |
-| --- | --- | --- |
-| bjarneo.workspace-layout | yes | not probed |
-| akshar.radio-atlas | yes | not probed |
-| crmne.hyprmoncfg | yes | not probed |
-| omamail | yes | not probed |
-| io.github.thisisgm.omapods | yes | not probed |
-| omaplug | yes | not probed |
+`hidden` means the widget was enabled for a probe, stayed invisible, and no player was present.
 
-## Do not block later phases
+Popup `mixed` is only `omarchy.clock`. `shell summon omarchy.clock` mapped overlay `omarchy-keyboard-panel`.
 
-Power popup and media playback are gaps. The bar loaded. Audio, network, and bluetooth panels opened. Overflow work can proceed.
+## First-party `bar-widget` plugins
+
+| id | Strip | Popup | Overflow | Status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| omarchy.active-window | unprobed | unprobed | unprobed | unprobed | Packaged. Disabled. Not on the saved layout. |
+| omarchy.agents | yes | unprobed | unprobed | supported | On the right, main. Overflowed during the Phase 4 drawer probe, then restored. |
+| omarchy.audio | yes | yes | unprobed | supported | `shell summon omarchy.audio` opened output and input devices. |
+| omarchy.bluetooth | yes | yes | unprobed | supported | `shell summon omarchy.bluetooth` opened the Bluetooth panel with paired devices. |
+| omarchy.clock | yes | mixed | unprobed | supported | Time on the strip. Summon mapped `omarchy-keyboard-panel`. |
+| omarchy.dropbox | unprobed | unprobed | unprobed | unprobed | Packaged. Disabled. Not on the saved layout. |
+| omarchy.indicators | yes | unprobed | unprobed | supported | Center cluster. Uses `firstPartyServiceFor` for idle, nightlight, and notifications. |
+| omarchy.keyboard-layout | yes | unprobed | unprobed | supported | Center. |
+| omarchy.media | hidden | unprobed | unprobed | hidden | Disabled. A Phase 3 enable placed it in center. `BarWidget.qml` sets `visible: hasMedia`. No MPRIS names. `playerctl` is not installed. Removed again so the layout matches the backup. |
+| omarchy.menu | yes | unprobed | unprobed | supported | Left edge of the strip. |
+| omarchy.microphone | unprobed | unprobed | unprobed | unprobed | Packaged. Disabled. Not on the saved layout. |
+| omarchy.monitor | yes | unprobed | unprobed | supported | Right. |
+| omarchy.network | yes | yes | unprobed | supported | `shell summon omarchy.network` opened Ethernet plus a Wi-Fi list. |
+| omarchy.power | yes | no | unprobed | partial | Icon on the strip. `shell summon omarchy.power` returned `ok`. No extra Hyprland overlay. |
+| omarchy.spacer | unprobed | unprobed | unprobed | unprobed | Packaged. Disabled. Not on the saved layout. |
+| omarchy.system-update | yes | unprobed | unprobed | supported | Center. |
+| omarchy.tailscale | yes | unprobed | unprobed | supported | Right. |
+| omarchy.tray | yes | unprobed | no | supported | OmaStow overlays `widgets/Tray.qml`. Unpinned StatusNotifier apps sit in the same drawer as overflowed plugins. The chevron is bar chrome, not a layout id. |
+| omarchy.weather | yes | unprobed | unprobed | supported | Center. |
+| omarchy.workspaces | yes | unprobed | unprobed | supported | `1 2 3` on the strip during the load probe. |
+
+## Third-party `bar-widget` plugins on this machine
+
+These painted without a first-party service from the replacement bar.
+
+| id | Strip | Popup | Overflow | Status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| akshar.radio-atlas | yes | unprobed | yes | supported | `overflow: true` on the saved right section. Visible in the 2026-09-13 open-drawer crops. |
+| bjarneo.workspace-layout | yes | unprobed | yes | supported | `overflow: true` on the saved right section. Visible in the 2026-09-13 open-drawer crops. |
+| crmne.hyprmoncfg | yes | unprobed | unprobed | supported | Right, main. |
+| io.github.thisisgm.omapods | yes | unprobed | unprobed | supported | Right, main. |
+| now-playing | unprobed | unprobed | unprobed | unprobed | Installed. Disabled. MPRIS widget. Not on the saved layout. |
+| omamail | yes | unprobed | yes | supported | `overflow: true` on the saved right section. Visible in the 2026-09-13 open-drawer crops. |
+| omaplug | yes | unprobed | unprobed | supported | Right, main. |
+
+`dmalmq.omastow` is the bar, not a widget. `dmalmq.omabar` is the old bar id and is disabled. Plugins whose kinds omit `bar-widget` are out of this matrix.
+
+## Gaps that stay listed
+
+`omarchy.power` has no proven panel on this bar. `omarchy.media` has no proven player on this bar. Neither blocked later phases.
