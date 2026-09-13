@@ -212,14 +212,6 @@ BarWidget {
     persistTrayState(p, h)
   }
 
-  function syncOverflowHost() {
-    if (bar && bar.hostOwnsOverflowDrawer === true) bar.trayHostItem = root
-  }
-
-  onBarChanged: syncOverflowHost()
-  Component.onCompleted: syncOverflowHost()
-  Component.onDestruction: if (bar && bar.trayHostItem === root) bar.trayHostItem = null
-
   visible: pinnedItems.length > 0 || drawerCount > 0
   clip: false
   implicitWidth: root.vertical ? root.barSize : trayContent.implicitWidth

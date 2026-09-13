@@ -53,7 +53,6 @@ Item {
   property var layoutConfig: fallbackBarConfig.layout
   property bool hostOwnsOverflowDrawer: true
   property bool overflowExpanded: false
-  property var trayHostItem: null
   property string centerAnchor: ""
   property bool requestedTransparent: false
   property bool useTransparentForeground: false
@@ -330,7 +329,6 @@ Item {
         pluginBarApis[id].destroy()
     }
     pluginBarApis = ({})
-    trayHostItem = null
   }
 
   function registerClickTarget(target) {
@@ -400,6 +398,18 @@ Item {
     if (!left || !right) return false
     if (left === right) return true
     return !!left.screen && !!right.screen && !!left.screen.name && !!right.screen.name && left.screen.name === right.screen.name
+  }
+
+  // The tray widget is built once per monitor. A drawer reads the copy in its
+  // own window so tray menus and the manage popup open on that monitor.
+  function trayWidgetFor(item) {
+    var window = targetWindow(item)
+    for (var i = 0; i < moduleSlots.length; i++) {
+      var slot = moduleSlots[i]
+      if (!slot || slot.moduleName !== "omarchy.tray" || !slot.activeItem) continue
+      if (sameWindow(slotWindow(slot), window)) return slot.activeItem
+    }
+    return null
   }
 
   function targetTooltipHovered(target) {
@@ -1756,7 +1766,11 @@ Item {
     id: drawerRoot
 
     readonly property var pluginEntries: root.overflowEntries()
-    readonly property var trayItems: root.trayHostItem ? root.trayHostItem.drawerItems : []
+    readonly property var tray: root.trayWidgetFor(drawerRoot)
+    readonly property var trayItems: tray ? tray.drawerItems : []
+    // The chevron is also the way into the tray manage popup, so it stays
+    // while any tray app exists, pinned or hidden included.
+    readonly property int trayCount: tray ? tray.allItems.length : 0
     readonly property int animationDuration: 600
     readonly property bool overflowSlot: true
     property string region: root.overflowDrawerSection
@@ -1775,7 +1789,7 @@ Item {
     readonly property real contentOffset: mirrored ? revealExtent - drawerExtent : drawerExtent - revealExtent
     readonly property string chevronGlyph: mirrored ? "\uf054" : "\uf053"
 
-    visible: pluginEntries.length > 0 || trayItems.length > 0 || root.barDragSource !== null
+    visible: pluginEntries.length > 0 || trayCount > 0 || root.barDragSource !== null
     implicitWidth: drawerContent.item ? drawerContent.item.implicitWidth : 0
     implicitHeight: drawerContent.item ? drawerContent.item.implicitHeight : 0
     width: implicitWidth
@@ -1791,8 +1805,8 @@ Item {
     function chevronPressed(button) {
       if (button === Qt.LeftButton)
         root.overflowExpanded = !root.overflowExpanded
-      else if (button === Qt.RightButton && root.trayHostItem)
-        root.trayHostItem.managePopupOpen = !root.trayHostItem.managePopupOpen
+      else if (button === Qt.RightButton && drawerRoot.tray)
+        drawerRoot.tray.managePopupOpen = !drawerRoot.tray.managePopupOpen
     }
 
     Loader {
@@ -1869,7 +1883,7 @@ Item {
 
             Repeater {
               model: drawerRoot.trayItems
-              OverflowTrayItem {}
+              OverflowTrayItem { tray: drawerRoot.tray }
             }
           }
         }
@@ -1945,7 +1959,7 @@ Item {
 
             Repeater {
               model: drawerRoot.trayItems
-              OverflowTrayItem {}
+              OverflowTrayItem { tray: drawerRoot.tray }
             }
           }
         }
@@ -1959,7 +1973,7 @@ Item {
     id: trayItemRoot
 
     required property var modelData
-    readonly property var tray: root.trayHostItem
+    required property var tray
     readonly property bool symbolic: !!tray && tray.iconIsSymbolic(modelData.icon)
     readonly property bool tooltipHovered: visible && opacity > 0 && trayPointer.containsMouse
 
