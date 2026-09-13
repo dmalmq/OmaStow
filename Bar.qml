@@ -609,7 +609,21 @@ Item {
     return BarModel.pinTrayToInner(entries, section)
   }
 
+  function wrapOverflowWrites() {
+    var api = root.shell
+    if (!api || api._omastowPreserveOverflow) return
+    if (typeof api.updateEntryInline !== "function") return
+    var original = api.updateEntryInline
+    api.updateEntryInline = function(id, settings) {
+      return original.call(api, id, BarModel.withPreservedOverflow(root.layoutConfig, id, settings))
+    }
+    api._omastowPreserveOverflow = true
+  }
+
+  onShellChanged: wrapOverflowWrites()
+
   function applyBarConfig() {
+    wrapOverflowWrites()
     var config = Util.isPlainObject(barConfig) ? barConfig : fallbackBarConfig
 
     position = normalizePosition(config.position)
@@ -1012,10 +1026,20 @@ Item {
       && typeof target.triggerPress === "function"
   }
 
+  function clickTargetBelongsToSlot(target, slot) {
+    var item = target
+    while (item) {
+      if (item === slot || item === slot.activeItem) return true
+      item = item.parent
+    }
+    return false
+  }
+
   function moduleClickTargetAt(slot, localX, localY) {
     for (var i = clickTargets.length - 1; i >= 0; i--) {
       var target = clickTargets[i]
       if (!moduleTargetClickable(target)) continue
+      if (!clickTargetBelongsToSlot(target, slot)) continue
 
       var targetPoint = { x: localX, y: localY }
       try {

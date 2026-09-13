@@ -56,6 +56,28 @@ function partitionSection(entries) {
   return { main: main, overflow: overflow }
 }
 
+function layoutEntryById(layout, moduleName) {
+  var id = String(moduleName || "")
+  if (!isPlainObject(layout) || id === "") return null
+  var regions = ["left", "center", "right"]
+  for (var r = 0; r < regions.length; r++) {
+    var entries = Array.isArray(layout[regions[r]]) ? layout[regions[r]] : []
+    for (var i = 0; i < entries.length; i++) {
+      if (entryId(entries[i]) === id) return entries[i]
+    }
+  }
+  return null
+}
+
+function withPreservedOverflow(layout, moduleName, settings) {
+  var next = {}
+  if (isPlainObject(settings)) {
+    for (var key in settings) next[key] = settings[key]
+  }
+  if (entryOverflow(layoutEntryById(layout, moduleName))) next.overflow = true
+  return next
+}
+
 function overflowEntries(layout) {
   var result = []
   if (!isPlainObject(layout)) return result
@@ -318,6 +340,8 @@ if (typeof module !== "undefined") {
     pinTrayToInner: pinTrayToInner,
     partitionSection: partitionSection,
     overflowEntries: overflowEntries,
+    layoutEntryById: layoutEntryById,
+    withPreservedOverflow: withPreservedOverflow,
     drawerChromeDropTarget: drawerChromeDropTarget,
     moduleString: moduleString,
     entryIndex: entryIndex,

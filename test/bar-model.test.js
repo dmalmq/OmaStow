@@ -1,6 +1,6 @@
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
-const { partitionSection, inlineSettingsDelta, entrySettings, overflowEntries, moveModule, drawerChromeDropTarget } = require("../BarModel.js")
+const { partitionSection, inlineSettingsDelta, entrySettings, overflowEntries, moveModule, drawerChromeDropTarget, withPreservedOverflow } = require("../BarModel.js")
 
 describe("partitionSection", () => {
   it("puts entries without overflow on main and keeps order", () => {
@@ -85,6 +85,29 @@ describe("entrySettings", () => {
     assert.deepEqual(
       entrySettings({ id: "omarchy.clock", overflow: true, format: "HH:mm" }),
       { format: "HH:mm" }
+    )
+  })
+})
+
+describe("withPreservedOverflow", () => {
+  const layout = {
+    left: [],
+    center: [],
+    right: [{ id: "omarchy.clock", overflow: true, format: "HH:mm" }]
+  }
+
+  it("puts overflow true back onto a settings write for an overflowed id", () => {
+    assert.deepEqual(
+      withPreservedOverflow(layout, "omarchy.clock", { id: "omarchy.clock", format: "ddd HH:mm" }),
+      { id: "omarchy.clock", format: "ddd HH:mm", overflow: true }
+    )
+  })
+
+  it("leaves a main-section write without an overflow key", () => {
+    const main = { left: [], center: [{ id: "omarchy.clock", format: "HH:mm" }], right: [] }
+    assert.deepEqual(
+      withPreservedOverflow(main, "omarchy.clock", { id: "omarchy.clock", format: "ddd HH:mm" }),
+      { id: "omarchy.clock", format: "ddd HH:mm" }
     )
   })
 })
