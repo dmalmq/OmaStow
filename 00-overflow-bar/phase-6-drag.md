@@ -11,7 +11,7 @@ Dragging a plugin onto the open drawer sets `overflow: true`. Dragging it onto t
 - Derive `dragHeld` from `barDragSource !== null` so collapsed drawer slots gain size.
 - `BarModel.moveModule` mutates `{left,center,right}` and applies the overflow bit. `moveModuleInConfig` wraps it after `rawLayoutSection` guards.
 - `dropBarModule` passes whether the target slot is in the drawer (`overflowSlot`).
-- Drawer chrome (`moduleName` empty) appends in the source section with overflow true.
+- Drawer chrome (`moduleName` empty) resolves through `BarModel.drawerChromeDropTarget`. The far edge lands after the last drawer widget, the near edge before the first. An empty drawer appends in the source section.
 - Tray apps stay on pin and hide. Do not invent a second tray writer.
 - Do not change `DragGhostPanel` unless the ghost clips.
 

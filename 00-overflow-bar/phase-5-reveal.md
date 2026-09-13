@@ -16,7 +16,7 @@ Click, hover, and a Hyprland-bound IPC toggle expand and collapse the same-bar d
 
 ## Data structures
 
-`OverflowReveal`: `{ expanded: boolean, hoverHeld: boolean, dragHeld: boolean }`. Derived `open = expanded || hoverHeld || dragHeld`. Not written to `shell.json`. Click and IPC latch `overflowExpanded` on the shared Bar root so every monitor opens together. Hover stays on each OverflowDrawer.
+`OverflowReveal`: `{ expanded: boolean, hoverHeld: boolean, dragHeld: boolean, panelHeld: boolean }`. Derived `open = expanded || hoverHeld || dragHeld || panelHeld`. Not written to `shell.json`. Click and IPC latch `overflowExpanded` on the shared Bar root so every monitor opens together. Hover stays on each OverflowDrawer. `panelHeld` is true while `activePopout` belongs to an overflow slot, and that open skips the slide so the popup anchors to an icon already in place.
 
 ## Verification
 
