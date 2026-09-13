@@ -92,6 +92,69 @@ function entriesAfter(entries, name) {
   return index === -1 ? [] : entries.slice(index + 1)
 }
 
+// Layout entries are shared with the live config. Copy when the overflow
+// bit changes so a later write does not mutate the pre-drop object.
+function applyMoveOverflow(entry, overflow) {
+  if (overflow === undefined) return entry
+  if (overflow === true) {
+    if (entryOverflow(entry)) return entry
+    if (typeof entry === "string") return { id: entry, overflow: true }
+    var promoted = {}
+    for (var key in entry) promoted[key] = entry[key]
+    promoted.overflow = true
+    return promoted
+  }
+  if (typeof entry === "string" || !isPlainObject(entry)) return entry
+  if (!("overflow" in entry)) return entry
+  var stripped = {}
+  for (var key in entry) {
+    if (key !== "overflow") stripped[key] = entry[key]
+  }
+  return stripped
+}
+
+function moveModule(layout, fromRegion, fromName, toRegion, beforeName, overflow) {
+  if (!isPlainObject(layout)) return false
+  var fromEntries = layout[fromRegion]
+  var toEntries = layout[toRegion]
+  if (!Array.isArray(fromEntries)) {
+    fromEntries = []
+    layout[fromRegion] = fromEntries
+  }
+  if (!Array.isArray(toEntries)) {
+    toEntries = []
+    layout[toRegion] = toEntries
+  }
+
+  var fromIndex = entryIndex(fromEntries, fromName)
+  if (fromIndex < 0) return false
+
+  var toIndex = beforeName ? entryIndex(toEntries, beforeName) : toEntries.length
+  if (toIndex < 0) toIndex = toEntries.length
+
+  var movedEntry = fromEntries[fromIndex]
+  var nextEntry = applyMoveOverflow(movedEntry, overflow)
+  var bitChanged = entryOverflow(movedEntry) !== entryOverflow(nextEntry)
+
+  if (fromRegion === toRegion && fromIndex === toIndex) {
+    if (!bitChanged) return false
+    fromEntries[fromIndex] = nextEntry
+    return true
+  }
+
+  fromEntries.splice(fromIndex, 1)
+  if (fromRegion === toRegion && fromIndex < toIndex) toIndex -= 1
+  if (toIndex < 0) toIndex = 0
+  if (toIndex > toEntries.length) toIndex = toEntries.length
+  if (fromRegion === toRegion && fromIndex === toIndex) {
+    fromEntries.splice(fromIndex, 0, nextEntry)
+    return bitChanged
+  }
+
+  toEntries.splice(toIndex, 0, nextEntry)
+  return true
+}
+
 // A shell.json write that only changes inline widget settings (the battery
 // percentage toggle, a clock format change) must not rebuild the bar.
 // Compare two normalized layouts: when the structure is unchanged — same
@@ -252,6 +315,7 @@ if (typeof module !== "undefined") {
     entryIndex: entryIndex,
     entriesBefore: entriesBefore,
     entriesAfter: entriesAfter,
+    moveModule: moveModule,
     inlineSettingsDelta: inlineSettingsDelta,
     expandPath: expandPath,
     customModuleSafeName: customModuleSafeName,
