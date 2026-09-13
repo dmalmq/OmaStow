@@ -24,7 +24,7 @@ The surface is the live `omarchy-shell` bar. Saved QML under `~/.config/omarchy/
 | Overflow flag | Edit `shell.json`, restart, widget sits on the overflow row |
 | Reveal | Click, hover, IPC |
 | Drag | Drop to overflow and back. Read `shell.json` |
-| Edges | `omarchy bar position` top, bottom, left, right |
+| Edges | `scripts/probe-phase-7-edges.sh` |
 | Screens | Two monitors, one row each |
 
 No browser, CLI, or mobile control skill covers this UI. Drive Hyprland and the bar with the real session.

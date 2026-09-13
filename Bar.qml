@@ -53,7 +53,19 @@ Item {
   property var layoutConfig: fallbackBarConfig.layout
   property bool hostOwnsOverflowDrawer: true
   property bool overflowExpanded: false
-  property var trayHostItem: null
+  // A panel summoned on a widget inside a collapsed drawer would anchor to a
+  // clipped icon. The drawer opens without its slide while this is set, so
+  // the popup lands under an icon the user can see.
+  property bool overflowRevealInstant: false
+  readonly property bool overflowPanelOpen: {
+    var owner = activePopout
+    if (!owner) return false
+    for (var i = 0; i < moduleSlots.length; i++) {
+      var slot = moduleSlots[i]
+      if (slot && slot.overflowSlot === true && slot.activeItem === owner) return true
+    }
+    return false
+  }
   property string centerAnchor: ""
   property bool requestedTransparent: false
   property bool useTransparentForeground: false
@@ -330,7 +342,6 @@ Item {
         pluginBarApis[id].destroy()
     }
     pluginBarApis = ({})
-    trayHostItem = null
   }
 
   function registerClickTarget(target) {
@@ -400,6 +411,18 @@ Item {
     if (!left || !right) return false
     if (left === right) return true
     return !!left.screen && !!right.screen && !!left.screen.name && !!right.screen.name && left.screen.name === right.screen.name
+  }
+
+  // The tray widget is built once per monitor. A drawer reads the copy in its
+  // own window so tray menus and the manage popup open on that monitor.
+  function trayWidgetFor(item) {
+    var window = targetWindow(item)
+    for (var i = 0; i < moduleSlots.length; i++) {
+      var slot = moduleSlots[i]
+      if (!slot || slot.moduleName !== "omarchy.tray" || !slot.activeItem) continue
+      if (sameWindow(slotWindow(slot), window)) return slot.activeItem
+    }
+    return null
   }
 
   function targetTooltipHovered(target) {
@@ -551,7 +574,9 @@ Item {
       if ("closeForPopoutSwitch" in activePopout) activePopout.closeForPopoutSwitch()
       else if ("close" in activePopout) activePopout.close()
     }
+    overflowRevealInstant = true
     activePopout = owner
+    Qt.callLater(function() { root.overflowRevealInstant = false })
   }
 
   function releasePopout(owner) {
@@ -884,48 +909,20 @@ Item {
     return config.bar.layout[region]
   }
 
-  function rawEntryIndex(entries, name) {
-    for (var i = 0; i < entries.length; i++) {
-      if (root.entryId(entries[i]) === name) return i
-    }
-
-    return -1
+  function moveModuleInConfig(config, fromRegion, fromName, toRegion, beforeName, overflow) {
+    rawLayoutSection(config, fromRegion)
+    rawLayoutSection(config, toRegion)
+    return BarModel.moveModule(config.bar.layout, fromRegion, fromName, toRegion, beforeName, overflow)
   }
 
-  function moveModuleInConfig(config, fromRegion, fromName, toRegion, beforeName) {
-    var fromEntries = rawLayoutSection(config, fromRegion)
-    var toEntries = rawLayoutSection(config, toRegion)
-    var fromIndex = rawEntryIndex(fromEntries, fromName)
-    if (fromIndex < 0) return false
-
-    var toIndex = beforeName ? rawEntryIndex(toEntries, beforeName) : toEntries.length
-    if (toIndex < 0) toIndex = toEntries.length
-
-    if (fromRegion === toRegion && fromIndex === toIndex) return false
-
-    var movedEntry = fromEntries[fromIndex]
-    fromEntries.splice(fromIndex, 1)
-
-    if (fromRegion === toRegion && fromIndex < toIndex) toIndex -= 1
-    if (toIndex < 0) toIndex = 0
-    if (toIndex > toEntries.length) toIndex = toEntries.length
-    if (fromRegion === toRegion && fromIndex === toIndex) {
-      fromEntries.splice(fromIndex, 0, movedEntry)
-      return false
-    }
-
-    toEntries.splice(toIndex, 0, movedEntry)
-    return true
-  }
-
-  function dropBarModule(source, toRegion, beforeName) {
+  function dropBarModule(source, toRegion, beforeName, overflow) {
     if (!source || !source.region || !source.moduleName || !toRegion) return false
     if (source.region === toRegion && source.moduleName === beforeName) return false
     if (!root.shell || typeof root.shell.mutateShellConfig !== "function") return false
 
     var changed = false
     root.shell.mutateShellConfig(function(config) {
-      changed = moveModuleInConfig(config, source.region, source.moduleName, toRegion, beforeName)
+      changed = moveModuleInConfig(config, source.region, source.moduleName, toRegion, beforeName, overflow)
     })
     return changed
   }
@@ -995,8 +992,14 @@ Item {
   function dropBarModuleAtTarget(sourceSlot, targetSlot, afterTarget) {
     if (!sourceSlot || !targetSlot) return false
 
-    var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
-    return dropBarModule(sourceSlot, targetSlot.region, beforeName)
+    var overflow = targetSlot.overflowSlot === true
+    if (targetSlot.moduleName) {
+      var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
+      return dropBarModule(sourceSlot, targetSlot.region, beforeName, overflow)
+    }
+
+    var target = BarModel.drawerChromeDropTarget(overflowEntries(), sourceSlot.region, afterTarget)
+    return dropBarModule(sourceSlot, target.region, target.beforeName, overflow)
   }
 
   function moduleTargetClickable(target) {
@@ -1778,33 +1781,48 @@ Item {
     id: drawerRoot
 
     readonly property var pluginEntries: root.overflowEntries()
-    readonly property var trayItems: root.trayHostItem ? root.trayHostItem.drawerItems : []
+    readonly property var tray: root.trayWidgetFor(drawerRoot)
+    readonly property var trayItems: tray ? tray.drawerItems : []
+    // The chevron is also the way into the tray manage popup, so it stays
+    // while any tray app exists, pinned or hidden included.
+    readonly property int trayCount: tray ? tray.allItems.length : 0
     readonly property int animationDuration: 600
+    readonly property bool overflowSlot: true
+    property string region: root.overflowDrawerSection
+    readonly property string moduleName: ""
     // Leave on this drawer. A shared hover bool collapses a still-hovered
     // copy when the pointer leaves another monitor.
     property bool hoverHeld: false
-    property bool dragHeld: false
-    readonly property bool open: root.overflowExpanded || hoverHeld || dragHeld
+    readonly property bool dragHeld: root.barDragSource !== null
+    readonly property bool open: root.overflowExpanded || hoverHeld || dragHeld || root.overflowPanelOpen
     property real revealProgress: open ? 1 : 0
     readonly property real drawerExtent: drawerContent.item ? drawerContent.item.drawerExtent : 0
     readonly property real revealExtent: drawerExtent * revealProgress
     readonly property color openFill: Style.selectedFillFor(root.barForeground, Color.accent, root.urgent)
+    readonly property bool mirrored: region === "left"
+    readonly property real chevronOffset: mirrored ? revealExtent : drawerExtent - revealExtent
+    readonly property real contentOffset: mirrored ? revealExtent - drawerExtent : drawerExtent - revealExtent
+    readonly property string chevronGlyph: mirrored ? "\uf054" : "\uf053"
 
-    visible: pluginEntries.length > 0 || trayItems.length > 0
+    visible: pluginEntries.length > 0 || trayCount > 0 || root.barDragSource !== null
     implicitWidth: drawerContent.item ? drawerContent.item.implicitWidth : 0
     implicitHeight: drawerContent.item ? drawerContent.item.implicitHeight : 0
     width: implicitWidth
     height: implicitHeight
 
+    Component.onCompleted: root.registerModuleSlot(drawerRoot)
+    Component.onDestruction: root.unregisterModuleSlot(drawerRoot)
+
     Behavior on revealProgress {
+      enabled: !root.overflowRevealInstant
       NumberAnimation { duration: drawerRoot.animationDuration; easing.type: Easing.OutCubic }
     }
 
     function chevronPressed(button) {
       if (button === Qt.LeftButton)
         root.overflowExpanded = !root.overflowExpanded
-      else if (button === Qt.RightButton && root.trayHostItem)
-        root.trayHostItem.managePopupOpen = !root.trayHostItem.managePopupOpen
+      else if (button === Qt.RightButton && drawerRoot.tray)
+        drawerRoot.tray.managePopupOpen = !drawerRoot.tray.managePopupOpen
     }
 
     Loader {
@@ -1826,8 +1844,9 @@ Item {
         containmentMask: QtObject {
           function contains(point: point): bool {
             if (point.y < 0 || point.y > horizontalDrawerRoot.height) return false
-            var chevronX = drawerRoot.drawerExtent - drawerRoot.revealExtent
-            return point.x >= chevronX && point.x <= horizontalDrawerRoot.implicitWidth
+            var start = drawerRoot.mirrored ? 0 : drawerRoot.chevronOffset
+            var end = drawerRoot.mirrored ? drawerRoot.chevronOffset + expandIcon.width : horizontalDrawerRoot.implicitWidth
+            return point.x >= start && point.x <= end
           }
         }
 
@@ -1848,13 +1867,13 @@ Item {
           bar: root
           width: implicitWidth
           height: implicitHeight
-          x: drawerRoot.drawerExtent - drawerRoot.revealExtent
-          text: "\uf053"
+          x: drawerRoot.chevronOffset
+          text: drawerRoot.chevronGlyph
           onPressed: function(button) { drawerRoot.chevronPressed(button) }
         }
 
         Item {
-          x: expandIcon.width
+          x: drawerRoot.mirrored ? 0 : expandIcon.width
           anchors.verticalCenter: parent.verticalCenter
           width: drawerRoot.drawerExtent
           height: root.barSize
@@ -1862,7 +1881,7 @@ Item {
 
           Row {
             id: drawerRow
-            x: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            x: drawerRoot.contentOffset
             anchors.verticalCenter: parent.verticalCenter
             spacing: 0
             layer.enabled: true
@@ -1874,12 +1893,13 @@ Item {
                 required property var modelData
                 entry: modelData.entry
                 region: modelData.region
+                overflowSlot: true
               }
             }
 
             Repeater {
               model: drawerRoot.trayItems
-              OverflowTrayItem {}
+              OverflowTrayItem { tray: drawerRoot.tray }
             }
           }
         }
@@ -1899,8 +1919,9 @@ Item {
         containmentMask: QtObject {
           function contains(point: point): bool {
             if (point.x < 0 || point.x > verticalDrawerRoot.width) return false
-            var chevronY = drawerRoot.drawerExtent - drawerRoot.revealExtent
-            return point.y >= chevronY && point.y <= verticalDrawerRoot.implicitHeight
+            var start = drawerRoot.mirrored ? 0 : drawerRoot.chevronOffset
+            var end = drawerRoot.mirrored ? drawerRoot.chevronOffset + expandIcon.height : verticalDrawerRoot.implicitHeight
+            return point.y >= start && point.y <= end
           }
         }
 
@@ -1921,14 +1942,14 @@ Item {
           bar: root
           width: implicitWidth
           height: implicitHeight
-          y: drawerRoot.drawerExtent - drawerRoot.revealExtent
-          text: "\uf053"
+          y: drawerRoot.chevronOffset
+          text: drawerRoot.chevronGlyph
           textRotation: 90
           onPressed: function(button) { drawerRoot.chevronPressed(button) }
         }
 
         Item {
-          y: expandIcon.height
+          y: drawerRoot.mirrored ? 0 : expandIcon.height
           anchors.horizontalCenter: parent.horizontalCenter
           width: root.barSize
           height: drawerRoot.drawerExtent
@@ -1936,7 +1957,7 @@ Item {
 
           Column {
             id: drawerColumn
-            y: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            y: drawerRoot.contentOffset
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 0
             layer.enabled: true
@@ -1948,12 +1969,13 @@ Item {
                 required property var modelData
                 entry: modelData.entry
                 region: modelData.region
+                overflowSlot: true
               }
             }
 
             Repeater {
               model: drawerRoot.trayItems
-              OverflowTrayItem {}
+              OverflowTrayItem { tray: drawerRoot.tray }
             }
           }
         }
@@ -1967,7 +1989,7 @@ Item {
     id: trayItemRoot
 
     required property var modelData
-    readonly property var tray: root.trayHostItem
+    required property var tray
     readonly property bool symbolic: !!tray && tray.iconIsSymbolic(modelData.icon)
     readonly property bool tooltipHovered: visible && opacity > 0 && trayPointer.containsMouse
 
@@ -2089,6 +2111,7 @@ Item {
 
     required property var entry
     property string region: ""
+    property bool overflowSlot: false
     readonly property string moduleName: root.entryId(entry)
     readonly property var moduleSettings: root.entrySettings(entry)
     readonly property string customType: root.customModuleType(entry)
