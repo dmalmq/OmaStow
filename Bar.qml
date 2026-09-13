@@ -1770,6 +1770,10 @@ Item {
     readonly property real drawerExtent: drawerContent.item ? drawerContent.item.drawerExtent : 0
     readonly property real revealExtent: drawerExtent * revealProgress
     readonly property color openFill: Style.selectedFillFor(root.barForeground, Color.accent, root.urgent)
+    readonly property bool mirrored: region === "left"
+    readonly property real chevronOffset: mirrored ? revealExtent : drawerExtent - revealExtent
+    readonly property real contentOffset: mirrored ? revealExtent - drawerExtent : drawerExtent - revealExtent
+    readonly property string chevronGlyph: mirrored ? "\uf054" : "\uf053"
 
     visible: pluginEntries.length > 0 || trayItems.length > 0 || root.barDragSource !== null
     implicitWidth: drawerContent.item ? drawerContent.item.implicitWidth : 0
@@ -1810,8 +1814,9 @@ Item {
         containmentMask: QtObject {
           function contains(point: point): bool {
             if (point.y < 0 || point.y > horizontalDrawerRoot.height) return false
-            var chevronX = drawerRoot.drawerExtent - drawerRoot.revealExtent
-            return point.x >= chevronX && point.x <= horizontalDrawerRoot.implicitWidth
+            var start = drawerRoot.mirrored ? 0 : drawerRoot.chevronOffset
+            var end = drawerRoot.mirrored ? drawerRoot.chevronOffset + expandIcon.width : horizontalDrawerRoot.implicitWidth
+            return point.x >= start && point.x <= end
           }
         }
 
@@ -1832,13 +1837,13 @@ Item {
           bar: root
           width: implicitWidth
           height: implicitHeight
-          x: drawerRoot.drawerExtent - drawerRoot.revealExtent
-          text: "\uf053"
+          x: drawerRoot.chevronOffset
+          text: drawerRoot.chevronGlyph
           onPressed: function(button) { drawerRoot.chevronPressed(button) }
         }
 
         Item {
-          x: expandIcon.width
+          x: drawerRoot.mirrored ? 0 : expandIcon.width
           anchors.verticalCenter: parent.verticalCenter
           width: drawerRoot.drawerExtent
           height: root.barSize
@@ -1846,7 +1851,7 @@ Item {
 
           Row {
             id: drawerRow
-            x: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            x: drawerRoot.contentOffset
             anchors.verticalCenter: parent.verticalCenter
             spacing: 0
             layer.enabled: true
@@ -1884,8 +1889,9 @@ Item {
         containmentMask: QtObject {
           function contains(point: point): bool {
             if (point.x < 0 || point.x > verticalDrawerRoot.width) return false
-            var chevronY = drawerRoot.drawerExtent - drawerRoot.revealExtent
-            return point.y >= chevronY && point.y <= verticalDrawerRoot.implicitHeight
+            var start = drawerRoot.mirrored ? 0 : drawerRoot.chevronOffset
+            var end = drawerRoot.mirrored ? drawerRoot.chevronOffset + expandIcon.height : verticalDrawerRoot.implicitHeight
+            return point.y >= start && point.y <= end
           }
         }
 
@@ -1906,14 +1912,14 @@ Item {
           bar: root
           width: implicitWidth
           height: implicitHeight
-          y: drawerRoot.drawerExtent - drawerRoot.revealExtent
-          text: "\uf053"
+          y: drawerRoot.chevronOffset
+          text: drawerRoot.chevronGlyph
           textRotation: 90
           onPressed: function(button) { drawerRoot.chevronPressed(button) }
         }
 
         Item {
-          y: expandIcon.height
+          y: drawerRoot.mirrored ? 0 : expandIcon.height
           anchors.horizontalCenter: parent.horizontalCenter
           width: root.barSize
           height: drawerRoot.drawerExtent
@@ -1921,7 +1927,7 @@ Item {
 
           Column {
             id: drawerColumn
-            y: drawerRoot.drawerExtent - drawerRoot.revealExtent
+            y: drawerRoot.contentOffset
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 0
             layer.enabled: true
