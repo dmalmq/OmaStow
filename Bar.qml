@@ -973,9 +973,8 @@ Item {
       return dropBarModule(sourceSlot, targetSlot.region, beforeName, overflow)
     }
 
-    // Drawer chrome has no module name. Append in the source section so a
-    // first drop has a sink before any overflowed plugin exists.
-    return dropBarModule(sourceSlot, sourceSlot.region, "", overflow)
+    var target = BarModel.drawerChromeDropTarget(overflowEntries(), sourceSlot.region, afterTarget)
+    return dropBarModule(sourceSlot, target.region, target.beforeName, overflow)
   }
 
   function moduleTargetClickable(target) {

@@ -68,6 +68,13 @@ function overflowEntries(layout) {
   return result
 }
 
+function drawerChromeDropTarget(drawerEntries, sourceRegion, atFarEdge) {
+  var rows = Array.isArray(drawerEntries) ? drawerEntries : []
+  if (rows.length === 0) return { region: sourceRegion, beforeName: "" }
+  if (atFarEdge) return { region: rows[rows.length - 1].region, beforeName: "" }
+  return { region: rows[0].region, beforeName: entryId(rows[0].entry) }
+}
+
 function moduleString(entry, key, fallback) {
   var settings = entrySettings(entry)
   var value = settings[key]
@@ -311,6 +318,7 @@ if (typeof module !== "undefined") {
     pinTrayToInner: pinTrayToInner,
     partitionSection: partitionSection,
     overflowEntries: overflowEntries,
+    drawerChromeDropTarget: drawerChromeDropTarget,
     moduleString: moduleString,
     entryIndex: entryIndex,
     entriesBefore: entriesBefore,
