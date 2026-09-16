@@ -1,3 +1,5 @@
+![OmaStow](banner.png)
+
 # OmaStow
 
 Put the bar widgets you rarely click behind the tray chevron, and get them back with a hover.

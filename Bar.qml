@@ -260,14 +260,14 @@ Item {
     }
 
     if (pluginBarApis[key]) {
-      pluginBarApis[key].shell = pluginShell
+      pluginBarApis[key].shell = root.preserveOverflowOnWrite(pluginShell)
       return pluginBarApis[key]
     }
 
     var api = pluginBarApiComponent.createObject(null, {
       pluginId: key,
       moduleName: String(moduleName || ""),
-      shell: pluginShell,
+      shell: root.preserveOverflowOnWrite(pluginShell),
       _showTooltip: function(target, text) { root.showTooltip(target, text) },
       _hideTooltip: function(target) { root.hideTooltip(target) },
       _registerClickTarget: function(target) { root.registerPluginClickTarget(key, target) },
@@ -609,21 +609,33 @@ Item {
     return BarModel.pinTrayToInner(entries, section)
   }
 
-  function wrapOverflowWrites() {
-    var api = root.shell
-    if (!api || api._omastowPreserveOverflow) return
-    if (typeof api.updateEntryInline !== "function") return
-    var original = api.updateEntryInline
-    api.updateEntryInline = function(id, settings) {
-      return original.call(api, id, BarModel.withPreservedOverflow(root.layoutConfig, id, settings))
-    }
-    api._omastowPreserveOverflow = true
+  // Per-widget shell facades (pluginShellForId/pluginShellForBarEntry results)
+  // are separate QtObject instances from root.shell, freshly created and
+  // cached by the host per plugin id — not the same object, so this can't
+  // be done by patching root.shell. Wrap each facade at the point it's
+  // handed to a widget instead: updateEntryInline is the only member any
+  // widget calls on it, but Proxy forwards the rest transparently so this
+  // doesn't have to track the host API's shape over time.
+  function preserveOverflowOnWrite(pluginShell) {
+    if (!pluginShell) return pluginShell
+    return new Proxy(pluginShell, {
+      get: function(target, prop) {
+        if (prop === "updateEntryInline") {
+          return function(id, settings) {
+            return target.updateEntryInline(id, BarModel.withPreservedOverflow(root.layoutConfig, id, settings))
+          }
+        }
+        var value = target[prop]
+        return typeof value === "function" ? value.bind(target) : value
+      },
+      set: function(target, prop, value) {
+        target[prop] = value
+        return true
+      }
+    })
   }
 
-  onShellChanged: wrapOverflowWrites()
-
   function applyBarConfig() {
-    wrapOverflowWrites()
     var config = Util.isPlainObject(barConfig) ? barConfig : fallbackBarConfig
 
     position = normalizePosition(config.position)
