@@ -32,7 +32,7 @@ Everything else is the bar you have now. Your `shell.json` layout, your widgets,
 omarchy plugin add https://github.com/dmalmq/OmaStow --enable
 ```
 
-`--enable` sets `bar.id` to `dmalmq.omastow` in `~/.config/omarchy/shell.json`. The shell swaps the bar in place. If OmaStow ever fails to load, the shell logs a warning and falls back to the built-in bar, so a broken update cannot leave you without one.
+`--enable` sets `bar.id` to `dmalmq.omastow` in `~/.config/omarchy/shell.json`. The shell swaps the bar in place. There is no automatic fallback: a bar plugin that throws while loading leaves the bar blank rather than reverting to `omarchy.bar`. If OmaStow ever fails to load, recover with `omarchy bar use built-in` (or edit `bar.id` back by hand) and `omarchy restart shell`.
 
 Enable it later, or switch back and forth:
 
