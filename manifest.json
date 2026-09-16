@@ -9,5 +9,6 @@
   "kinds": ["bar"],
   "entryPoints": {
     "bar": "Bar.qml"
-  }
+  },
+  "omarchy": { "clonedFrom": "omarchy.bar" }
 }
